@@ -1,0 +1,561 @@
+{
+  "project": {
+    "name": "BrandPilot AI",
+    "purpose": "AI-powered branding and digital marketing assistant for public-sector organizations",
+    "case_study": "OMSAR",
+    "prototype_data_policy": [
+      "Use public information",
+      "Use sanitized or anonymized information",
+      "Use simulated data when real data is sensitive",
+      "Do not store credentials",
+      "Do not use confidential government information",
+      "Do not use personal data unless explicitly authorized and necessary"
+    ],
+    "core_principle": "Communicate the citizen or organizational benefit, not technology for its own sake."
+  },
+  "decision_pipeline": [
+    "Identify brand",
+    "Identify communication objective",
+    "Identify target audience",
+    "Select platform",
+    "Select language strategy",
+    "Select tone",
+    "Select content format",
+    "Select CTA",
+    "Generate content",
+    "Run brand and safety check",
+    "Send for human approval",
+    "Schedule or simulate scheduling",
+    "Analyze performance and recommend improvements"
+  ],
+  "brands": {
+    "omsar": {
+      "display_name": "OMSAR",
+      "full_name": "Office of the Minister of State for Administrative Reform",
+      "sector": "Public sector / Government",
+      "role": "Institutional communication for administrative reform, digital transformation, governance, and public-sector modernization",
+      "core_themes": [
+        "Digital transformation",
+        "Administrative reform",
+        "Anti-corruption",
+        "Citizen-centered public services",
+        "Transparency",
+        "Accountability",
+        "Public-sector efficiency",
+        "Innovation",
+        "Government modernization",
+        "Collaboration",
+        "Accessibility",
+        "Public trust"
+      ],
+      "audiences": [
+        "Citizens",
+        "Government institutions",
+        "Ministries",
+        "Municipalities",
+        "Public-sector employees",
+        "Businesses",
+        "Universities and academics",
+        "Professionals and experts",
+        "Civil society",
+        "International and development partners"
+      ],
+      "personality": [
+        "Professional",
+        "Trustworthy",
+        "Citizen-focused",
+        "Progressive",
+        "Transparent",
+        "Collaborative",
+        "Impact-oriented"
+      ],
+      "default_tone": [
+        "Professional",
+        "Clear",
+        "Factual",
+        "Confident",
+        "Neutral"
+      ],
+      "tone_by_context": {
+        "official_announcement": [
+          "Formal",
+          "Concise",
+          "Accurate",
+          "Neutral"
+        ],
+        "policy_or_reform": [
+          "Institutional",
+          "Evidence-based",
+          "Impact-oriented"
+        ],
+        "citizen_story": [
+          "Human-centered",
+          "Respectful",
+          "Accessible"
+        ],
+        "event_or_workshop": [
+          "Professional",
+          "Informative",
+          "Inviting"
+        ],
+        "digital_transformation": [
+          "Modern",
+          "Optimistic",
+          "Practical",
+          "Factual"
+        ]
+      },
+      "language_strategy": {
+        "primary": [
+          "Arabic",
+          "English"
+        ],
+        "arabic_style": "Modern Standard Arabic by default; keep wording clear and understandable",
+        "english_style": "Professional institutional English, concise and direct",
+        "translation_rule": "Adapt meaning and tone; do not force literal word-for-word translation"
+      },
+      "content_pillars": [
+        "Administrative reform",
+        "Digital transformation",
+        "Anti-corruption",
+        "Citizen Charter and citizen engagement",
+        "Government modernization",
+        "Accessibility and inclusion",
+        "AI and innovation",
+        "Workshops and consultations",
+        "Ministerial activities",
+        "Partnerships and institutional cooperation"
+      ],
+      "content_structure_rules": [
+        "Start with the context or key message",
+        "Explain what happened or what is being introduced",
+        "Explain why it matters",
+        "End with next step, expected impact, or relevant CTA when appropriate"
+      ],
+      "cta_style": [
+        "Learn more",
+        "Read the full details",
+        "Participate",
+        "Register",
+        "Visit the official platform",
+        "Follow upcoming updates"
+      ],
+      "emoji_policy": "Limited and purposeful; avoid excessive emoji use",
+      "hashtag_policy": "Use a small set of relevant institutional and topic-specific hashtags",
+      "avoid": [
+        "Overly promotional language",
+        "Political advocacy",
+        "Unverified claims",
+        "Exaggerated achievements",
+        "Overly casual slang",
+        "Technology-first messaging without explaining public value"
+      ]
+    },
+    "dawlati": {
+      "display_name": "DAWLATI",
+      "sector": "Citizen-facing digital government services",
+      "role": "Help citizens and businesses discover, understand, access, apply for, and track government services",
+      "core_themes": [
+        "Government services",
+        "Digital access",
+        "Convenience",
+        "Simplicity",
+        "Accessibility",
+        "Efficiency",
+        "Online applications",
+        "Service discovery",
+        "Citizen experience"
+      ],
+      "audiences": [
+        "Citizens",
+        "Businesses",
+        "Farmers",
+        "Investors",
+        "Tourism-sector businesses",
+        "Applicants for government services",
+        "General public"
+      ],
+      "personality": [
+        "Accessible",
+        "Practical",
+        "Modern",
+        "Helpful",
+        "Citizen-centered",
+        "Optimistic",
+        "Trustworthy"
+      ],
+      "default_tone": [
+        "Friendly",
+        "Clear",
+        "Direct",
+        "Helpful",
+        "Action-oriented"
+      ],
+      "tone_by_context": {
+        "service_announcement": [
+          "Informative",
+          "Clear",
+          "Benefit-focused"
+        ],
+        "citizen_engagement": [
+          "Friendly",
+          "Conversational",
+          "Inviting"
+        ],
+        "tutorial": [
+          "Simple",
+          "Instructional",
+          "Encouraging"
+        ],
+        "awareness": [
+          "Accessible",
+          "Positive",
+          "Practical"
+        ],
+        "event": [
+          "Friendly",
+          "Inviting",
+          "Action-oriented"
+        ]
+      },
+      "language_strategy": {
+        "primary": [
+          "Arabic",
+          "English"
+        ],
+        "arabic_style": {
+          "official_information": "Modern Standard Arabic",
+          "service_information": "Modern Standard Arabic with simple wording",
+          "citizen_engagement": "Accessible Arabic; Lebanese conversational wording may be used selectively",
+          "promotional_reels": "Lebanese conversational Arabic may be used when appropriate"
+        },
+        "english_style": "Simple, direct, citizen-friendly English",
+        "bilingual_rule": "Bilingual Arabic-English content is appropriate when useful",
+        "translation_rule": "Adapt each language naturally rather than translating literally"
+      },
+      "content_pillars": [
+        "New online government services",
+        "Platform awareness",
+        "Service benefits",
+        "How-to and tutorial content",
+        "Citizen engagement",
+        "Events and outreach",
+        "Service discovery",
+        "Calls for participation"
+      ],
+      "content_structure_rules": [
+        "Lead with the citizen benefit",
+        "Identify who the service is for",
+        "Explain what can now be done online",
+        "Keep instructions short and actionable",
+        "End with a clear CTA"
+      ],
+      "value_messages": [
+        "Avoid unnecessary waiting",
+        "Access services anytime",
+        "Access services from anywhere",
+        "Find government services in one place",
+        "Understand requirements more easily",
+        "Apply online where available",
+        "Track service requests where supported"
+      ],
+      "cta_style": [
+        "Apply online",
+        "Explore the service",
+        "Visit Dawlati",
+        "Link in bio",
+        "Register now",
+        "Share your feedback",
+        "Discover available services"
+      ],
+      "emoji_policy": "Moderate use is acceptable, especially for calls to action, dates, locations, and citizen engagement",
+      "hashtag_policy": "Use a small number of relevant service, Lebanon, and digital-government hashtags",
+      "avoid": [
+        "Heavy bureaucratic language",
+        "Long institutional introductions",
+        "Technical terminology without explanation",
+        "Claims that a service is online unless verified",
+        "Overcomplicated CTAs",
+        "Literal translations that sound unnatural"
+      ]
+    },
+    "matchmaking": {
+      "display_name": "OMSAR Matchmaking Portal",
+      "sector": "Public-sector talent and collaboration",
+      "role": "Connect public-sector needs with Lebanese students, graduates, professionals, academics, experts, and diaspora talent",
+      "core_themes": [
+        "Opportunity",
+        "Talent",
+        "Public service",
+        "Collaboration",
+        "Skills",
+        "Experience",
+        "Knowledge sharing",
+        "Research collaboration",
+        "Technical assistance",
+        "Meaningful impact"
+      ],
+      "audiences": [
+        "University students",
+        "Fresh graduates",
+        "Professionals",
+        "Experts",
+        "Researchers",
+        "Faculty members",
+        "Lebanese diaspora",
+        "Government institutions"
+      ],
+      "personality": [
+        "Professional",
+        "Motivating",
+        "Collaborative",
+        "Opportunity-driven",
+        "Impact-oriented"
+      ],
+      "default_tone": [
+        "Professional",
+        "Encouraging",
+        "Clear",
+        "Motivating"
+      ],
+      "tone_by_context": {
+        "internship": [
+          "Energetic",
+          "Clear",
+          "Opportunity-focused"
+        ],
+        "professional_opportunity": [
+          "Professional",
+          "Impact-oriented"
+        ],
+        "technical_assistance": [
+          "Expert",
+          "Credible",
+          "Concise"
+        ],
+        "academic_collaboration": [
+          "Professional",
+          "Collaborative",
+          "Research-oriented"
+        ]
+      },
+      "language_strategy": {
+        "primary": [
+          "English",
+          "Arabic"
+        ],
+        "english_style": "Professional and opportunity-focused",
+        "arabic_style": "Clear professional Arabic",
+        "translation_rule": "Preserve opportunity details accurately; adapt the tone naturally"
+      },
+      "content_pillars": [
+        "Internships",
+        "Fresh graduate opportunities",
+        "Professional assignments",
+        "Technical assistance",
+        "Research collaboration",
+        "Academic partnerships",
+        "Public-sector challenges",
+        "Success stories"
+      ],
+      "content_structure_rules": [
+        "State the opportunity clearly",
+        "Identify who should apply or participate",
+        "Explain the public-sector challenge or purpose",
+        "Highlight expected contribution or impact",
+        "Give a clear application CTA"
+      ],
+      "cta_style": [
+        "Apply now",
+        "Explore the opportunity",
+        "View requirements",
+        "Contribute your expertise",
+        "Join the initiative"
+      ],
+      "emoji_policy": "Limited",
+      "hashtag_policy": "Professional and opportunity-relevant hashtags only",
+      "avoid": [
+        "Positioning every opportunity as a traditional job",
+        "Overpromising career outcomes",
+        "Vague eligibility requirements",
+        "Informal or playful language for expert assignments"
+      ]
+    }
+  },
+  "platform_rules": {
+    "instagram": {
+      "recommended_formats": [
+        "Carousel",
+        "Reel",
+        "Static post",
+        "Story"
+      ],
+      "style": "Concise, visual, audience-focused",
+      "prioritize": [
+        "Strong opening",
+        "Clear benefit",
+        "Readable caption",
+        "CTA"
+      ],
+      "avoid": [
+        "Long unstructured paragraphs",
+        "Too many hashtags"
+      ]
+    },
+    "linkedin": {
+      "recommended_formats": [
+        "Professional post",
+        "Carousel/document post",
+        "Short video"
+      ],
+      "style": "Professional, institutional, impact-oriented",
+      "prioritize": [
+        "Context",
+        "Strategic value",
+        "Partners",
+        "Results",
+        "Professional CTA"
+      ]
+    },
+    "facebook": {
+      "recommended_formats": [
+        "Post",
+        "Photo",
+        "Video",
+        "Event information"
+      ],
+      "style": "Accessible and informative",
+      "prioritize": [
+        "Citizen relevance",
+        "Practical details",
+        "CTA"
+      ]
+    }
+  },
+  "campaign_objectives": {
+    "awareness": {
+      "goal": "Make the audience aware of an initiative, service, event, or reform",
+      "preferred_ctas": [
+        "Learn more",
+        "Visit the platform",
+        "Discover"
+      ]
+    },
+    "engagement": {
+      "goal": "Encourage participation, feedback, comments, registrations, or discussion",
+      "preferred_ctas": [
+        "Share your opinion",
+        "Register",
+        "Participate",
+        "Comment"
+      ]
+    },
+    "service_adoption": {
+      "goal": "Encourage eligible users to use an available digital service",
+      "preferred_ctas": [
+        "Apply online",
+        "Start your application",
+        "Visit Dawlati"
+      ]
+    },
+    "opportunity_recruitment": {
+      "goal": "Attract relevant candidates or experts to a Matchmaking opportunity",
+      "preferred_ctas": [
+        "Apply now",
+        "View requirements",
+        "Contribute your expertise"
+      ]
+    },
+    "institutional_update": {
+      "goal": "Communicate official activity, policy progress, meetings, or reform milestones",
+      "preferred_ctas": [
+        "Learn more",
+        "Read the update",
+        "Follow upcoming steps"
+      ]
+    }
+  },
+  "brand_checker": {
+    "checks": [
+      "Correct brand selected",
+      "Tone matches brand and context",
+      "Target audience is clear",
+      "Language is natural and appropriate",
+      "Facts are supported by available context",
+      "No confidential or sensitive information is exposed",
+      "No unverified claims are presented as facts",
+      "Citizen benefit or organizational impact is clear",
+      "CTA is appropriate",
+      "Platform format is suitable",
+      "No unnecessary political or partisan language",
+      "No excessive hashtags or emojis",
+      "Human approval required before publishing"
+    ],
+    "output_labels": [
+      "PASS",
+      "REVISE",
+      "BLOCK"
+    ]
+  },
+  "generation_output_schema": {
+    "brand": "string",
+    "objective": "string",
+    "target_audience": [
+      "string"
+    ],
+    "platform": "string",
+    "language": [
+      "string"
+    ],
+    "tone": [
+      "string"
+    ],
+    "recommended_format": "string",
+    "campaign_angle": "string",
+    "key_message": "string",
+    "caption_ar": "string or null",
+    "caption_en": "string or null",
+    "visual_concept": "string",
+    "script_or_carousel_structure": [
+      "string"
+    ],
+    "cta": "string",
+    "hashtags": [
+      "string"
+    ],
+    "brand_check": {
+      "status": "PASS | REVISE | BLOCK",
+      "issues": [
+        "string"
+      ],
+      "recommendations": [
+        "string"
+      ]
+    }
+  },
+  "example_input": {
+    "brief": "Seven Ministry of Agriculture services are now available online through Dawlati.",
+    "brand": "auto",
+    "objective": "service_adoption",
+    "audience": [
+      "Farmers",
+      "Agricultural businesses"
+    ],
+    "platform": "Instagram",
+    "language": [
+      "Arabic",
+      "English"
+    ]
+  },
+  "example_expected_strategy": {
+    "selected_brand": "DAWLATI",
+    "tone": [
+      "Accessible",
+      "Informative",
+      "Benefit-focused"
+    ],
+    "format": "Carousel",
+    "campaign_angle": "Complete key agricultural procedures more easily online",
+    "cta": "Explore the available services on Dawlati"
+  }
+}
