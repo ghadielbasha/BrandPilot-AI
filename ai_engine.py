@@ -25,9 +25,6 @@ CONFIG = load_brand_intelligence()
 # --------------------------------------------------
 
 def detect_brand(brief: str) -> str:
-    """
-    Detect which BrandPilot brand should handle the campaign.
-    """
 
     text = brief.lower()
 
@@ -70,9 +67,6 @@ def detect_brand(brief: str) -> str:
 # --------------------------------------------------
 
 def detect_objective(brief: str, brand: str) -> str:
-    """
-    Determine the most likely marketing objective.
-    """
 
     text = brief.lower()
 
@@ -144,14 +138,14 @@ def detect_objective(brief: str, brand: str) -> str:
 # --------------------------------------------------
 
 def detect_audience(brief: str, brand: str):
-    """
-    Suggest a likely audience based on the campaign.
-    """
 
     text = brief.lower()
 
     audience_map = {
-        "farmer": ["Farmers", "Agricultural businesses"],
+        "farmer": [
+            "Farmers",
+            "Agricultural businesses"
+        ],
         "agriculture": [
             "Farmers",
             "Producers",
@@ -225,9 +219,6 @@ def detect_audience(brief: str, brand: str):
 # --------------------------------------------------
 
 def format_audience_list(audiences):
-    """
-    Convert an audience list into a natural sentence fragment.
-    """
 
     if not audiences:
         return "the target audience"
@@ -257,9 +248,6 @@ def select_tone(
     brand_data,
     objective: str
 ):
-    """
-    Select contextual tone based on campaign objective.
-    """
 
     tone_context_map = {
         "service_adoption": "service_announcement",
@@ -271,6 +259,7 @@ def select_tone(
     tone_context = tone_context_map.get(objective)
 
     if tone_context:
+
         contextual_tone = (
             brand_data
             .get("tone_by_context", {})
@@ -296,9 +285,6 @@ def recommend_format(
     objective: str,
     platform: str
 ) -> str:
-    """
-    Recommend a content format based on platform and objective.
-    """
 
     platform = platform.lower()
     text = brief.lower()
@@ -308,13 +294,11 @@ def recommend_format(
         if "how to" in text or "tutorial" in text:
             return "Reel"
 
-        if objective == "service_adoption":
-            return "Carousel"
-
-        if objective == "engagement":
-            return "Carousel"
-
-        if objective == "opportunity_recruitment":
+        if objective in [
+            "service_adoption",
+            "engagement",
+            "opportunity_recruitment"
+        ]:
             return "Carousel"
 
         return "Carousel"
@@ -337,9 +321,6 @@ def generate_campaign_angle(
     objective: str,
     audience
 ) -> str:
-    """
-    Generate the strategic communication angle.
-    """
 
     audience_text = format_audience_list(
         audience
@@ -399,9 +380,6 @@ def select_cta(
     brand: str,
     objective: str
 ) -> str:
-    """
-    Select the most appropriate call to action.
-    """
 
     if objective == "service_adoption":
         return "Explore the available service on Dawlati"
@@ -436,22 +414,18 @@ def generate_campaign_strategy(
     languages,
     audience_input: str = "",
 ):
-    """
-    Generate the complete BrandPilot campaign strategy.
-    """
 
     brands = CONFIG["brands"]
 
-    # --------------------------------------------------
     # Brand
-    # --------------------------------------------------
-
     if selected_brand == "Auto Detect":
+
         brand_key = detect_brand(
             brief
         )
 
     else:
+
         brand_key = next(
             (
                 key
@@ -463,27 +437,23 @@ def generate_campaign_strategy(
 
     brand_data = brands[brand_key]
 
-    # --------------------------------------------------
     # Objective
-    # --------------------------------------------------
-
     if selected_objective == "Auto Detect":
+
         objective = detect_objective(
             brief,
             brand_key
         )
 
     else:
+
         objective = (
             selected_objective
             .lower()
             .replace(" ", "_")
         )
 
-    # --------------------------------------------------
     # Audience
-    # --------------------------------------------------
-
     if audience_input.strip():
 
         audiences = [
@@ -499,19 +469,13 @@ def generate_campaign_strategy(
             brand_key
         )
 
-    # --------------------------------------------------
     # Tone
-    # --------------------------------------------------
-
     tone = select_tone(
         brand_data,
         objective
     )
 
-    # --------------------------------------------------
-    # Recommended Format
-    # --------------------------------------------------
-
+    # Format
     recommended_format = recommend_format(
         brief,
         brand_key,
@@ -519,35 +483,27 @@ def generate_campaign_strategy(
         platform
     )
 
-    # --------------------------------------------------
-    # Campaign Angle
-    # --------------------------------------------------
-
+    # Campaign angle
     campaign_angle = generate_campaign_angle(
         brand_key,
         objective,
         audiences
     )
 
-    # --------------------------------------------------
     # CTA
-    # --------------------------------------------------
-
     cta = select_cta(
         brand_key,
         objective
     )
 
-    # --------------------------------------------------
-    # Return Strategy
-    # --------------------------------------------------
-
     return {
         "brand_key": brand_key,
         "brand": brand_data["display_name"],
-        "objective": objective
-        .replace("_", " ")
-        .title(),
+        "objective": (
+            objective
+            .replace("_", " ")
+            .title()
+        ),
         "target_audience": audiences,
         "platform": platform,
         "languages": languages,
