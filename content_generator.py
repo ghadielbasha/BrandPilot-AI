@@ -1,11 +1,10 @@
 import json
 from typing import Literal
 
-from ollama import chat
 from pydantic import BaseModel
 
+from ai_provider import AIProviderError, generate_structured_text
 from ai_engine import CONFIG
-from config import MODEL_NAME
 from grounding_engine import GroundingContext, build_grounding_context
 from safe_fallback import SafeFallbackError, build_safe_fallback_campaign
 
@@ -727,7 +726,7 @@ Do not add explanations outside JSON.
 
 
 # --------------------------------------------------
-# Ollama Structured Generation
+# Provider-backed Structured Generation
 # --------------------------------------------------
 
 def _call_structured_model(
@@ -737,47 +736,17 @@ def _call_structured_model(
 
     try:
 
-        response = chat(
-            model=MODEL_NAME,
-
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-
-                {
-                    "role": "user",
-                    "content": user_prompt,
-                },
-            ],
-
-            format=MarketingContent.model_json_schema(),
-
-            think=False,
-
-            options={
-                "temperature": 0
-            }
+        raw_content = generate_structured_text(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            schema=MarketingContent.model_json_schema(),
         )
 
-    except Exception as error:
+    except AIProviderError as error:
 
         raise RuntimeError(
-            "Could not connect to the local Ollama model. "
-            f"Make sure Ollama is running and {MODEL_NAME} "
-            f"is installed. Details: {error}"
-        )
-
-
-    raw_content = response.message.content
-
-
-    if not raw_content:
-
-        raise RuntimeError(
-            "The local AI returned an empty response."
-        )
+            f"BrandPilot AI provider error: {error}"
+        ) from error
 
 
     try:
@@ -789,7 +758,7 @@ def _call_structured_model(
     except Exception as error:
 
         raise RuntimeError(
-            "The local AI response could not be validated "
+            "The AI provider response could not be validated "
             "against the BrandPilot schema. "
             f"Details: {error}"
         )

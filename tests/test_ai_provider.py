@@ -1,0 +1,251 @@
+import json
+import os
+import unittest
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
+
+from ai_provider import (
+    AIProviderConfigurationError,
+    AIProviderError,
+    DEFAULT_MODELS,
+    check_ai_provider_health,
+    generate_structured_text,
+    get_ai_provider_settings,
+)
+from content_generator import (
+    MarketingContent,
+    _call_structured_model,
+    _generate_initial_content,
+    _generate_repaired_content,
+    generate_marketing_content,
+)
+
+
+class AIProviderTests(unittest.TestCase):
+
+    def setUp(self):
+        self.brief = (
+            "Seven Ministry of Agriculture services are now available "
+            "online through Dawlati."
+        )
+        self.strategy = {
+            "brand_key": "dawlati",
+            "brand": "DAWLATI",
+            "target_audience": [
+                "Farmers", "Producers", "Agricultural businesses",
+            ],
+            "languages": ["Arabic", "English"],
+            "platform": "Instagram",
+            "recommended_format": "Carousel",
+        }
+        self.payload = {
+            "caption_ar": (
+                "أصبحت 7 خدمات تابعة لوزارة الزراعة متاحة الآن إلكترونياً "
+                "عبر منصة «دولتي»."
+            ),
+            "caption_en": self.brief,
+            "content_structure": [
+                {
+                    "number": 1,
+                    "type": "Slide",
+                    "headline": "7 Ministry of Agriculture services",
+                    "body": self.brief,
+                },
+                {
+                    "number": 2,
+                    "type": "Slide",
+                    "headline": "For the agricultural sector",
+                    "body": (
+                        "For farmers, producers, and agricultural businesses."
+                    ),
+                },
+            ],
+            "visual_concept": (
+                "A professional announcement for seven Ministry of Agriculture "
+                "services available through Dawlati."
+            ),
+            "visual_generation_prompt": (
+                "Create a professional announcement for seven Ministry of "
+                "Agriculture services using generic agricultural imagery."
+            ),
+            "cta": (
+                "Explore the 7 available Ministry of Agriculture services on Dawlati"
+            ),
+            "hashtags": ["#Dawlati", "#دولتي", "#Lebanon"],
+            "brand_check": {
+                "status": "PASS",
+                "issues": [],
+                "recommendations": [],
+            },
+        }
+        self.raw_payload = json.dumps(self.payload, ensure_ascii=False)
+
+    def test_default_provider_is_ollama(self):
+        with patch.dict(os.environ, {}, clear=True):
+            settings = get_ai_provider_settings()
+        self.assertEqual(settings.provider, "ollama")
+        self.assertEqual(settings.model, "qwen3:4b")
+
+    @patch("ai_provider._ollama_chat")
+    def test_ollama_provider_uses_mocked_ollama_call(self, ollama_chat):
+        ollama_chat.return_value = SimpleNamespace(
+            message=SimpleNamespace(content=self.raw_payload)
+        )
+        with patch.dict(
+            os.environ,
+            {"AI_PROVIDER": "ollama", "BRANDPILOT_MODEL": "qwen3:4b"},
+            clear=True,
+        ):
+            raw = generate_structured_text(
+                system_prompt="system",
+                user_prompt="user",
+                schema=MarketingContent.model_json_schema(),
+            )
+        self.assertEqual(raw, self.raw_payload)
+        self.assertEqual(ollama_chat.call_args.kwargs["model"], "qwen3:4b")
+        self.assertFalse(ollama_chat.call_args.kwargs["think"])
+
+    @patch("ai_provider._create_groq_client")
+    def test_groq_provider_uses_strict_structured_output(self, create_client):
+        client = MagicMock()
+        client.chat.completions.create.return_value = SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=self.raw_payload))]
+        )
+        create_client.return_value = client
+        with patch.dict(
+            os.environ,
+            {"AI_PROVIDER": "groq", "GROQ_API_KEY": "test-key"},
+            clear=True,
+        ):
+            raw = generate_structured_text(
+                system_prompt="system",
+                user_prompt="user",
+                schema=MarketingContent.model_json_schema(),
+            )
+
+        self.assertEqual(raw, self.raw_payload)
+        kwargs = client.chat.completions.create.call_args.kwargs
+        self.assertEqual(kwargs["model"], "qwen/qwen3.8-27b")
+        self.assertEqual(kwargs["reasoning_effort"], "none")
+        self.assertEqual(kwargs["reasoning_format"], "hidden")
+        response_format = kwargs["response_format"]
+        self.assertEqual(response_format["type"], "json_schema")
+        self.assertTrue(response_format["json_schema"]["strict"])
+        schema = response_format["json_schema"]["schema"]
+        self.assertFalse(schema["additionalProperties"])
+        self.assertFalse(schema["$defs"]["ContentItem"]["additionalProperties"])
+
+    def test_groq_default_model_id(self):
+        with patch.dict(
+            os.environ,
+            {"AI_PROVIDER": "groq", "GROQ_API_KEY": "test-key"},
+            clear=True,
+        ):
+            settings = get_ai_provider_settings()
+        self.assertEqual(settings.model, DEFAULT_MODELS["groq"])
+        self.assertEqual(settings.model, "qwen/qwen3.8-27b")
+
+    def test_missing_groq_api_key_fails_safely(self):
+        with patch.dict(os.environ, {"AI_PROVIDER": "groq"}, clear=True):
+            with self.assertRaises(AIProviderConfigurationError) as context:
+                generate_structured_text(
+                    system_prompt="system",
+                    user_prompt="user",
+                    schema=MarketingContent.model_json_schema(),
+                )
+        self.assertIn("GROQ_API_KEY", str(context.exception))
+
+    @patch("ai_provider._create_groq_client")
+    def test_groq_api_key_never_appears_in_errors(self, create_client):
+        secret = "never-print-this-secret"
+        create_client.side_effect = RuntimeError(f"failed with {secret}")
+        with patch.dict(
+            os.environ,
+            {"AI_PROVIDER": "groq", "GROQ_API_KEY": secret},
+            clear=True,
+        ):
+            with self.assertRaises(AIProviderError) as context:
+                generate_structured_text(
+                    system_prompt="system",
+                    user_prompt="user",
+                    schema=MarketingContent.model_json_schema(),
+                )
+        self.assertNotIn(secret, str(context.exception))
+
+    def test_unknown_provider_is_rejected(self):
+        with patch.dict(os.environ, {"AI_PROVIDER": "unknown"}, clear=True):
+            with self.assertRaises(AIProviderConfigurationError):
+                get_ai_provider_settings()
+
+    @patch("content_generator.generate_structured_text")
+    def test_initial_generation_uses_provider_abstraction(self, provider_call):
+        provider_call.return_value = self.raw_payload
+        content = _generate_initial_content(self.brief, self.strategy)
+        self.assertIsInstance(content, MarketingContent)
+        provider_call.assert_called_once()
+
+    @patch("content_generator.generate_structured_text")
+    def test_repair_generation_uses_provider_abstraction(self, provider_call):
+        provider_call.return_value = self.raw_payload
+        content = _generate_repaired_content(
+            brief=self.brief,
+            strategy=self.strategy,
+            failed_content=self.payload,
+            validation_error="factual_validation: test",
+            validation_context={"validation_stage": "factual_validation", "issues": []},
+        )
+        self.assertIsInstance(content, MarketingContent)
+        provider_call.assert_called_once()
+
+    @patch("ai_provider._create_groq_client")
+    def test_groq_output_parses_into_marketing_content(self, create_client):
+        client = MagicMock()
+        client.chat.completions.create.return_value = SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=self.raw_payload))]
+        )
+        create_client.return_value = client
+        with patch.dict(
+            os.environ,
+            {"AI_PROVIDER": "groq", "GROQ_API_KEY": "test-key"},
+            clear=True,
+        ):
+            content = _call_structured_model("system", "user")
+        self.assertIsInstance(content, MarketingContent)
+        self.assertEqual(content.caption_en, self.brief)
+
+    @patch("ai_provider._create_groq_client")
+    def test_validators_run_with_groq_provider(self, create_client):
+        client = MagicMock()
+        client.chat.completions.create.return_value = SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=self.raw_payload))]
+        )
+        create_client.return_value = client
+        with patch.dict(
+            os.environ,
+            {"AI_PROVIDER": "groq", "GROQ_API_KEY": "test-key"},
+            clear=True,
+        ):
+            result = generate_marketing_content(self.brief, self.strategy)
+        for key in (
+            "security_validation", "terminology_validation",
+            "factual_validation", "language_validation",
+        ):
+            self.assertEqual(result[key]["status"], "PASS")
+
+    @patch("ai_provider._create_groq_client")
+    def test_groq_health_check_does_not_use_ollama(self, create_client):
+        client = MagicMock()
+        create_client.return_value = client
+        with patch.dict(
+            os.environ,
+            {"AI_PROVIDER": "groq", "GROQ_API_KEY": "test-key"},
+            clear=True,
+        ), patch("ai_provider._ollama_chat") as ollama_call:
+            status = check_ai_provider_health("http://127.0.0.1:11434")
+        self.assertEqual(status, "Healthy")
+        client.models.retrieve.assert_called_once_with("qwen/qwen3.8-27b")
+        ollama_call.assert_not_called()
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

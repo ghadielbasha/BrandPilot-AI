@@ -6,7 +6,7 @@ import streamlit as st
 
 from ai_engine import CONFIG, generate_campaign_strategy
 from auth import Role
-from config import DB_PATH, ENVIRONMENT, MODEL_NAME
+from config import AI_PROVIDER, DB_PATH, ENVIRONMENT, MODEL_NAME
 from content_generator import generate_marketing_content
 from grounding_engine import SUPPORTED_BRANDS, build_grounding_context
 from health import check_health
@@ -218,7 +218,9 @@ def system_page() -> None:
     for brand in sorted(SUPPORTED_BRANDS):
         context = build_grounding_context(brand)
         st.write(f"**{brand.title()}** — {len(context.source_ids)} approved sources; records: {', '.join(context.record_names)}")
-    st.caption(f"Environment: {ENVIRONMENT} · Model: {MODEL_NAME}")
+    st.caption(
+        f"Environment: {ENVIRONMENT} · Provider: {AI_PROVIDER} · Model: {MODEL_NAME}"
+    )
     st.json(check_health(check_model=True))
 
 

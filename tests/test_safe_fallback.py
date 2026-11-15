@@ -54,7 +54,7 @@ class SafeFallbackTests(unittest.TestCase):
         )
 
     def test_builder_makes_no_ollama_call(self):
-        with patch("content_generator.chat") as model_call:
+        with patch("ai_provider._ollama_chat") as model_call:
             payload = self._payload()
         model_call.assert_not_called()
         self.assertEqual(payload["caption_en"], self.brief)
