@@ -1,0 +1,71 @@
+{
+  "brand": "dawlati",
+  "sources": [
+    {
+      "id": "DAWLATI-WEB-001",
+      "title": "DAWLATI Official Website",
+      "source_type": "official_website",
+      "url": "https://dawlati.gov.lb/en/dawlati/",
+      "classification": "public",
+      "status": "approved",
+      "language": "en",
+      "last_verified": "2026-11-11",
+      "notes": "Official English DAWLATI homepage. Used for platform purpose, supported capabilities, target users, and service-directory information."
+    },
+    {
+      "id": "DAWLATI-WEB-002",
+      "title": "About DAWLATI",
+      "source_type": "official_website",
+      "url": "https://dawlati.gov.lb/en/about/",
+      "classification": "public",
+      "status": "approved",
+      "language": "en",
+      "last_verified": "2026-11-11",
+      "notes": "Official DAWLATI About page. Used for mission, vision, OMSAR relationship, and citizen/business positioning."
+    },
+    {
+      "id": "DAWLATI-WEB-003",
+      "title": "DAWLATI Arabic Homepage",
+      "source_type": "official_website",
+      "url": "https://dawlati.gov.lb/",
+      "classification": "public",
+      "status": "approved",
+      "language": "ar",
+      "last_verified": "2026-11-11",
+      "notes": "Official Arabic homepage. Authoritative source for the Arabic name دولتي and Arabic platform terminology."
+    },
+    {
+      "id": "DAWLATI-WEB-004",
+      "title": "DAWLATI Government Services Directory",
+      "source_type": "official_website",
+      "url": "https://dawlati.gov.lb/en/government-services/",
+      "classification": "public",
+      "status": "approved",
+      "language": "en",
+      "last_verified": "2026-11-11",
+      "notes": "Official current government-services directory. Service-level facts must be verified against this source before publication."
+    },
+    {
+      "id": "DAWLATI-WEB-005",
+      "title": "DAWLATI 2026 - OMSAR",
+      "source_type": "official_website",
+      "url": "https://omsar.gov.lb/en/digital-transformation/e-services/dawlati/",
+      "classification": "public",
+      "status": "approved",
+      "language": "en",
+      "last_verified": "2026-11-11",
+      "notes": "Official OMSAR source describing DAWLATI as the central gateway for Lebanese government services."
+    },
+    {
+      "id": "DAWLATI-WEB-006",
+      "title": "DAWLATI Arabic About Page",
+      "source_type": "official_website",
+      "url": "https://dawlati.gov.lb/عن-دولتي/",
+      "classification": "public",
+      "status": "approved",
+      "language": "ar",
+      "last_verified": "2026-11-11",
+      "notes": "Official Arabic About page used for Arabic mission, platform description, and institutional terminology."
+    }
+  ]
+}

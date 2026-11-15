@@ -1,0 +1,179 @@
+{
+  "id": "DAWLATI-ORG-001",
+  "brand_key": "dawlati",
+  "record_type": "organization_profile",
+
+  "official_names": {
+    "en": "DAWLATI",
+    "ar": "دولتي"
+  },
+
+  "country": "Lebanon",
+
+  "classification": "public",
+  "status": "approved",
+  "last_verified": "2026-11-11",
+
+  "ownership": {
+    "developed_by": "Office of the Minister of State for Administrative Reform",
+    "developed_by_acronym": "OMSAR",
+    "country": "Lebanon",
+    "source_ids": [
+      "DAWLATI-WEB-002",
+      "DAWLATI-WEB-005"
+    ]
+  },
+
+  "summary": {
+    "en": "DAWLATI is Lebanon's official platform for government services, providing citizens and businesses with a unified starting point to find government services, understand requirements, access government information, and use available digital services.",
+    "ar": "«دولتي» هي المنصة الرسمية للخدمات الحكومية في لبنان، وتوفّر للأفراد والشركات نقطة موحّدة للبحث عن الخدمات الحكومية وفهم متطلباتها والوصول إلى المعلومات والخدمات الرقمية المتاحة."
+  },
+
+  "mission": {
+    "en": "Create one trusted platform for government services that makes it easier to find what users need, understand what is required, and know where to go.",
+    "source_ids": [
+      "DAWLATI-WEB-002"
+    ]
+  },
+
+  "vision": {
+    "en": "A Lebanon where government services are digital, accessible, and built around the people and businesses they serve.",
+    "source_ids": [
+      "DAWLATI-WEB-002"
+    ]
+  },
+
+  "primary_audiences": [
+    "citizens",
+    "individuals",
+    "businesses",
+    "applicants for government services"
+  ],
+
+  "core_functions": [
+    {
+      "id": "government_service_directory",
+      "name_en": "Government Service Directory",
+      "name_ar": "دليل الخدمات الحكومية",
+      "scope": "platform_wide",
+      "description_en": "Helps users discover government services and identify the relevant public entity and available service information.",
+      "source_ids": [
+        "DAWLATI-WEB-001",
+        "DAWLATI-WEB-003",
+        "DAWLATI-WEB-004"
+      ]
+    },
+    {
+      "id": "government_information",
+      "name_en": "Government Information",
+      "name_ar": "المعلومات الحكومية",
+      "scope": "platform_wide",
+      "description_en": "Provides users with a unified starting point for government service information, requirements, procedures, locations, and related guidance when available.",
+      "source_ids": [
+        "DAWLATI-WEB-001",
+        "DAWLATI-WEB-002",
+        "DAWLATI-WEB-003"
+      ]
+    },
+    {
+      "id": "government_websites_directory",
+      "name_en": "Government Websites Directory",
+      "name_ar": "دليل المواقع الحكومية",
+      "scope": "platform_wide",
+      "description_en": "Provides access to official Lebanese ministry and public-institution websites.",
+      "source_ids": [
+        "DAWLATI-WEB-001",
+        "DAWLATI-WEB-003"
+      ]
+    },
+    {
+      "id": "digital_application",
+      "name_en": "Digital Application",
+      "name_ar": "التقديم الإلكتروني",
+      "scope": "service_dependent",
+      "description_en": "Some supported government services can be applied for digitally through DAWLATI.",
+      "source_ids": [
+        "DAWLATI-WEB-001",
+        "DAWLATI-WEB-002"
+      ]
+    },
+    {
+      "id": "online_payment",
+      "name_en": "Online Payment",
+      "name_ar": "الدفع الإلكتروني",
+      "scope": "service_dependent",
+      "description_en": "Digital payment may be available for supported services where payment integration is enabled.",
+      "source_ids": [
+        "DAWLATI-WEB-001",
+        "DAWLATI-WEB-003"
+      ]
+    },
+    {
+      "id": "request_tracking",
+      "name_en": "Request Tracking",
+      "name_ar": "متابعة الطلبات",
+      "scope": "service_dependent",
+      "description_en": "Users may track requests for supported services where request tracking is enabled.",
+      "source_ids": [
+        "DAWLATI-WEB-001",
+        "DAWLATI-WEB-003"
+      ]
+    }
+  ],
+
+  "digitization_status": {
+    "model": "progressive",
+    "description_en": "Government-service digitization through DAWLATI is ongoing and incremental. Not every government service is fully digital.",
+    "source_ids": [
+      "DAWLATI-WEB-002",
+      "DAWLATI-WEB-005"
+    ]
+  },
+
+  "service_claim_rules": {
+    "important": [
+      "Platform-wide capabilities must not automatically be attributed to every individual service.",
+      "A service must not be described as digitally applicable unless approved service-level evidence confirms digital application.",
+      "A service must not be described as supporting online payment unless approved service-level evidence confirms online payment.",
+      "A service must not be described as supporting request tracking unless approved service-level evidence confirms request tracking.",
+      "A service being listed in the government-services directory does not automatically mean the full transaction is digital.",
+      "Do not invent service names, requirements, fees, documents, processing times, eligibility conditions, URLs, or digital capabilities."
+    ]
+  },
+
+  "communication_principles": [
+    "clear",
+    "citizen-friendly",
+    "helpful",
+    "practical",
+    "accessible",
+    "trustworthy",
+    "action-oriented"
+  ],
+
+  "communication_guardrails": {
+    "must_be": [
+      "factual",
+      "clear",
+      "citizen-centered",
+      "consistent with approved service information"
+    ],
+
+    "must_not_be": [
+      "speculative",
+      "politically promotional",
+      "exaggerated",
+      "misleading about service digitization",
+      "unsupported by approved sources"
+    ]
+  },
+
+  "source_ids": [
+    "DAWLATI-WEB-001",
+    "DAWLATI-WEB-002",
+    "DAWLATI-WEB-003",
+    "DAWLATI-WEB-004",
+    "DAWLATI-WEB-005",
+    "DAWLATI-WEB-006"
+  ]
+}

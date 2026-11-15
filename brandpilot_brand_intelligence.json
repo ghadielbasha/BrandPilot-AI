@@ -278,108 +278,6 @@
         "Overcomplicated CTAs",
         "Literal translations that sound unnatural"
       ]
-    },
-    "matchmaking": {
-      "display_name": "OMSAR Matchmaking Portal",
-      "sector": "Public-sector talent and collaboration",
-      "role": "Connect public-sector needs with Lebanese students, graduates, professionals, academics, experts, and diaspora talent",
-      "core_themes": [
-        "Opportunity",
-        "Talent",
-        "Public service",
-        "Collaboration",
-        "Skills",
-        "Experience",
-        "Knowledge sharing",
-        "Research collaboration",
-        "Technical assistance",
-        "Meaningful impact"
-      ],
-      "audiences": [
-        "University students",
-        "Fresh graduates",
-        "Professionals",
-        "Experts",
-        "Researchers",
-        "Faculty members",
-        "Lebanese diaspora",
-        "Government institutions"
-      ],
-      "personality": [
-        "Professional",
-        "Motivating",
-        "Collaborative",
-        "Opportunity-driven",
-        "Impact-oriented"
-      ],
-      "default_tone": [
-        "Professional",
-        "Encouraging",
-        "Clear",
-        "Motivating"
-      ],
-      "tone_by_context": {
-        "internship": [
-          "Energetic",
-          "Clear",
-          "Opportunity-focused"
-        ],
-        "professional_opportunity": [
-          "Professional",
-          "Impact-oriented"
-        ],
-        "technical_assistance": [
-          "Expert",
-          "Credible",
-          "Concise"
-        ],
-        "academic_collaboration": [
-          "Professional",
-          "Collaborative",
-          "Research-oriented"
-        ]
-      },
-      "language_strategy": {
-        "primary": [
-          "English",
-          "Arabic"
-        ],
-        "english_style": "Professional and opportunity-focused",
-        "arabic_style": "Clear professional Arabic",
-        "translation_rule": "Preserve opportunity details accurately; adapt the tone naturally"
-      },
-      "content_pillars": [
-        "Internships",
-        "Fresh graduate opportunities",
-        "Professional assignments",
-        "Technical assistance",
-        "Research collaboration",
-        "Academic partnerships",
-        "Public-sector challenges",
-        "Success stories"
-      ],
-      "content_structure_rules": [
-        "State the opportunity clearly",
-        "Identify who should apply or participate",
-        "Explain the public-sector challenge or purpose",
-        "Highlight expected contribution or impact",
-        "Give a clear application CTA"
-      ],
-      "cta_style": [
-        "Apply now",
-        "Explore the opportunity",
-        "View requirements",
-        "Contribute your expertise",
-        "Join the initiative"
-      ],
-      "emoji_policy": "Limited",
-      "hashtag_policy": "Professional and opportunity-relevant hashtags only",
-      "avoid": [
-        "Positioning every opportunity as a traditional job",
-        "Overpromising career outcomes",
-        "Vague eligibility requirements",
-        "Informal or playful language for expert assignments"
-      ]
     }
   },
   "platform_rules": {
@@ -456,14 +354,6 @@
         "Apply online",
         "Start your application",
         "Visit Dawlati"
-      ]
-    },
-    "opportunity_recruitment": {
-      "goal": "Attract relevant candidates or experts to a Matchmaking opportunity",
-      "preferred_ctas": [
-        "Apply now",
-        "View requirements",
-        "Contribute your expertise"
       ]
     },
     "institutional_update": {

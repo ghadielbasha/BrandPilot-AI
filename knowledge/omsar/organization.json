@@ -1,0 +1,89 @@
+{
+  "id": "OMSAR-ORG-001",
+  "brand_key": "omsar",
+  "record_type": "organization_profile",
+
+  "official_names": {
+    "en": "Office of the Minister of State for Administrative Reform",
+    "acronym": "OMSAR",
+    "ar": "مكتب وزير الدولة لشؤون التنمية الإدارية"
+  },
+
+  "country": "Lebanon",
+
+  "classification": "public",
+  "status": "approved",
+  "last_verified": "2026-11-11",
+
+  "summary": {
+    "en": "OMSAR is a Lebanese public-sector institution working on administrative reform, digital transformation, anti-corruption, and the modernization of public administration.",
+    "ar": "مكتب وزير الدولة لشؤون التنمية الإدارية هو جهة حكومية لبنانية تعمل على الإصلاح الإداري والتحول الرقمي ومكافحة الفساد وتحديث الإدارة العامة."
+  },
+
+  "core_areas": [
+    {
+      "id": "administrative_reform",
+      "name_en": "Administrative Reform",
+      "name_ar": "الإصلاح الإداري",
+      "description_en": "Modernizing public administration, improving institutional effectiveness, restoring trust in public institutions, and improving the quality and efficiency of public services.",
+      "source_ids": [
+        "OMSAR-WEB-001"
+      ]
+    },
+    {
+      "id": "digital_transformation",
+      "name_en": "Digital Transformation",
+      "name_ar": "التحول الرقمي",
+      "description_en": "Modernizing public administration through citizen-centered government services, improved efficiency, digital systems, and redesigned administrative processes.",
+      "source_ids": [
+        "OMSAR-WEB-001",
+        "OMSAR-WEB-002",
+        "OMSAR-WEB-003"
+      ]
+    },
+    {
+      "id": "anti_corruption",
+      "name_en": "Anti-Corruption",
+      "name_ar": "مكافحة الفساد",
+      "description_en": "Supporting and coordinating reforms that strengthen integrity, transparency, accountability, and good governance.",
+      "source_ids": [
+        "OMSAR-WEB-001"
+      ]
+    }
+  ],
+
+  "institutional_principles": [
+    "citizen-centered services",
+    "transparency",
+    "accountability",
+    "integrity",
+    "administrative efficiency",
+    "innovation",
+    "modernization",
+    "collaboration"
+  ],
+
+  "communication_guardrails": {
+    "must_be": [
+      "factual",
+      "professional",
+      "clear",
+      "institutional",
+      "citizen-focused"
+    ],
+
+    "must_not_be": [
+      "partisan",
+      "politically promotional",
+      "speculative",
+      "exaggerated",
+      "unsupported by approved sources"
+    ]
+  },
+
+  "source_ids": [
+    "OMSAR-WEB-001",
+    "OMSAR-WEB-002",
+    "OMSAR-WEB-003"
+  ]
+}

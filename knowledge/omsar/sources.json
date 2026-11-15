@@ -1,0 +1,38 @@
+{
+  "brand": "omsar",
+  "sources": [
+    {
+      "id": "OMSAR-WEB-001",
+      "title": "OMSAR Official Website",
+      "source_type": "official_website",
+      "url": "https://omsar.gov.lb/",
+      "classification": "public",
+      "status": "approved",
+      "language": "ar",
+      "last_verified": "2026-11-11",
+      "notes": "Official OMSAR website. Used for institutional role and main areas of work."
+    },
+    {
+      "id": "OMSAR-WEB-002",
+      "title": "Digital Transformation Strategy 2020-2030",
+      "source_type": "official_website",
+      "url": "https://omsar.gov.lb/en/digital-transformation/digital-transformation-strategy-2020-2030/",
+      "classification": "public",
+      "status": "approved",
+      "language": "en",
+      "last_verified": "2026-11-11",
+      "notes": "Official OMSAR source describing Lebanon's national digital transformation roadmap."
+    },
+    {
+      "id": "OMSAR-WEB-003",
+      "title": "OMSAR E-Services",
+      "source_type": "official_website",
+      "url": "https://omsar.gov.lb/en/digital-transformation/e-services/",
+      "classification": "public",
+      "status": "approved",
+      "language": "en",
+      "last_verified": "2026-11-11",
+      "notes": "Official OMSAR source describing citizen-centric e-services reform."
+    }
+  ]
+}

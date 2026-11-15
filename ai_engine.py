@@ -1,20 +1,73 @@
-import yaml
+import re
 from pathlib import Path
 
+import yaml
 
-CONFIG_PATH = Path("brandpilot_brand_intelligence.yaml")
+from grounding_engine import build_grounding_context
+from validators.factual_validator import (
+    validate_factual_claims,
+)
 
+
+# --------------------------------------------------
+# Configuration
+# --------------------------------------------------
+
+BASE_DIR = Path(__file__).resolve().parent
+
+CONFIG_PATH = (
+    BASE_DIR
+    / "brandpilot_brand_intelligence.yaml"
+)
+
+
+class StrategyValidationError(Exception):
+    """Raised when a generated campaign strategy is unsafe."""
+    pass
+
+
+# --------------------------------------------------
+# Brand Intelligence Loader
+# --------------------------------------------------
 
 def load_brand_intelligence():
     """Load BrandPilot's structured brand intelligence."""
 
     if not CONFIG_PATH.exists():
+
         raise FileNotFoundError(
-            "brandpilot_brand_intelligence.yaml was not found."
+            "brandpilot_brand_intelligence.yaml "
+            "was not found."
         )
 
-    with open(CONFIG_PATH, "r", encoding="utf-8") as file:
-        return yaml.safe_load(file)
+    with open(
+        CONFIG_PATH,
+        "r",
+        encoding="utf-8"
+    ) as file:
+
+        data = yaml.safe_load(
+            file
+        )
+
+    if not isinstance(
+        data,
+        dict
+    ):
+
+        raise ValueError(
+            "Brand intelligence configuration "
+            "must contain a YAML object."
+        )
+
+    if "brands" not in data:
+
+        raise ValueError(
+            "Brand intelligence configuration "
+            "does not contain 'brands'."
+        )
+
+    return data
 
 
 CONFIG = load_brand_intelligence()
@@ -24,13 +77,28 @@ CONFIG = load_brand_intelligence()
 # Brand Detection
 # --------------------------------------------------
 
-def detect_brand(brief: str) -> str:
+def detect_brand(
+    brief: str
+) -> str:
 
-    text = brief.lower()
+    text = brief.casefold()
 
-    dawlati_keywords = [
+    # Explicit brand references receive priority.
+
+    dawlati_explicit = [
         "dawlati",
         "دولتي",
+    ]
+
+    if any(
+        keyword in text
+        for keyword in dawlati_explicit
+    ):
+        return "dawlati"
+
+    # Context-based detection.
+
+    dawlati_keywords = [
         "government service",
         "government services",
         "online service",
@@ -38,26 +106,18 @@ def detect_brand(brief: str) -> str:
         "apply online",
         "digital service",
         "digital services",
+        "خدمة حكومية",
+        "خدمات حكومية",
+        "خدمة إلكترونية",
+        "خدمات إلكترونية",
     ]
 
-    matchmaking_keywords = [
-        "matchmaking",
-        "internship",
-        "internships",
-        "job opportunity",
-        "opportunity",
-        "fresh graduate",
-        "student",
-        "expert",
-        "technical assistance",
-        "research collaboration",
-    ]
-
-    if any(keyword in text for keyword in dawlati_keywords):
+    if any(
+        keyword in text
+        for keyword in dawlati_keywords
+    ):
         return "dawlati"
 
-    if any(keyword in text for keyword in matchmaking_keywords):
-        return "matchmaking"
 
     return "omsar"
 
@@ -66,9 +126,30 @@ def detect_brand(brief: str) -> str:
 # Objective Detection
 # --------------------------------------------------
 
-def detect_objective(brief: str, brand: str) -> str:
+def detect_objective(
+    brief: str,
+    brand: str
+) -> str:
 
-    text = brief.lower()
+    text = brief.casefold()
+
+
+    service_keywords = [
+        "service available",
+        "services available",
+        "available online",
+        "apply online",
+        "online service",
+        "online services",
+        "digital service",
+        "digital services",
+        "launched on dawlati",
+        "available through dawlati",
+        "متاحة إلكترونياً",
+        "متاحة إلكترونيًا",
+        "خدمات متاحة",
+    ]
+
 
     engagement_keywords = [
         "register",
@@ -79,27 +160,9 @@ def detect_objective(brief: str, brand: str) -> str:
         "discussion",
         "focus group",
         "share your opinion",
+        "consultation",
     ]
 
-    opportunity_keywords = [
-        "internship",
-        "apply",
-        "candidate",
-        "vacancy",
-        "expert",
-        "opportunity",
-        "recruit",
-    ]
-
-    service_keywords = [
-        "service available",
-        "services available",
-        "available online",
-        "apply online",
-        "online service",
-        "digital service",
-        "launched on dawlati",
-    ]
 
     institutional_keywords = [
         "meeting",
@@ -109,26 +172,37 @@ def detect_objective(brief: str, brand: str) -> str:
         "reform",
         "agreement",
         "workshop",
-        "consultation",
     ]
 
-    if any(keyword in text for keyword in engagement_keywords):
-        return "engagement"
 
-    if brand == "matchmaking" and any(
-        keyword in text for keyword in opportunity_keywords
-    ):
-        return "opportunity_recruitment"
+    # Brand-specific objectives receive priority.
 
-    if brand == "dawlati" and any(
-        keyword in text for keyword in service_keywords
+    if (
+        brand == "dawlati"
+        and any(
+            keyword in text
+            for keyword in service_keywords
+        )
     ):
         return "service_adoption"
 
-    if brand == "omsar" and any(
-        keyword in text for keyword in institutional_keywords
+
+    if any(
+        keyword in text
+        for keyword in engagement_keywords
+    ):
+        return "engagement"
+
+
+    if (
+        brand == "omsar"
+        and any(
+            keyword in text
+            for keyword in institutional_keywords
+        )
     ):
         return "institutional_update"
+
 
     return "awareness"
 
@@ -137,80 +211,104 @@ def detect_objective(brief: str, brand: str) -> str:
 # Audience Detection
 # --------------------------------------------------
 
-def detect_audience(brief: str, brand: str):
+def detect_audience(
+    brief: str,
+    brand: str
+):
 
-    text = brief.lower()
+    text = brief.casefold()
+
 
     audience_map = {
         "farmer": [
             "Farmers",
-            "Agricultural businesses"
+            "Agricultural businesses",
         ],
+
         "agriculture": [
             "Farmers",
             "Producers",
-            "Agricultural businesses"
+            "Agricultural businesses",
         ],
+
+        "وزارة الزراعة": [
+            "Farmers",
+            "Producers",
+            "Agricultural businesses",
+        ],
+
         "student": [
             "University students",
-            "Fresh graduates"
+            "Fresh graduates",
         ],
+
         "graduate": [
-            "Fresh graduates"
+            "Fresh graduates",
         ],
+
         "expert": [
             "Professionals",
-            "Experts"
+            "Experts",
         ],
+
         "investor": [
             "Investors",
-            "Businesses"
+            "Businesses",
         ],
+
         "tourism": [
-            "Tourism-sector businesses"
+            "Tourism-sector businesses",
         ],
+
         "hotel": [
             "Hotel owners",
-            "Tourism-sector businesses"
+            "Tourism-sector businesses",
         ],
+
         "restaurant": [
             "Restaurant owners",
-            "Tourism-sector businesses"
+            "Tourism-sector businesses",
         ],
+
         "citizen": [
-            "Citizens"
+            "Citizens",
         ],
+
         "municipality": [
             "Municipalities",
-            "Local government institutions"
+            "Local government institutions",
         ],
     }
 
-    for keyword, audiences in audience_map.items():
+
+    for keyword, audiences in (
+        audience_map.items()
+    ):
+
         if keyword in text:
             return audiences
+
 
     default_audiences = {
         "omsar": [
             "Citizens",
             "Government institutions",
-            "Partners"
+            "Partners",
         ],
+
         "dawlati": [
             "Citizens",
-            "Businesses"
+            "Businesses",
         ],
-        "matchmaking": [
-            "Students",
-            "Fresh graduates",
-            "Professionals",
-            "Experts"
-        ],
+
     }
+
 
     return default_audiences.get(
         brand,
-        ["General public"]
+        [
+            "General public"
+        ]
     )
 
 
@@ -218,26 +316,223 @@ def detect_audience(brief: str, brand: str):
 # Audience Formatting
 # --------------------------------------------------
 
-def format_audience_list(audiences):
+def format_audience_list(
+    audiences
+) -> str:
 
     if not audiences:
         return "the target audience"
+
 
     audiences = [
         audience.lower()
         for audience in audiences
     ]
 
-    if len(audiences) == 1:
-        return audiences[0]
 
-    if len(audiences) == 2:
-        return f"{audiences[0]} and {audiences[1]}"
+    if len(
+        audiences
+    ) == 1:
+
+        return audiences[
+            0
+        ]
+
+
+    if len(
+        audiences
+    ) == 2:
+
+        return (
+            f"{audiences[0]} "
+            f"and {audiences[1]}"
+        )
+
 
     return (
-        ", ".join(audiences[:-1])
+        ", ".join(
+            audiences[
+                :-1
+            ]
+        )
         + f", and {audiences[-1]}"
     )
+
+
+# --------------------------------------------------
+# Explicit Service Count Extraction
+# --------------------------------------------------
+
+NUMBER_WORDS = {
+    "one": "1",
+    "two": "2",
+    "three": "3",
+    "four": "4",
+    "five": "5",
+    "six": "6",
+    "seven": "7",
+    "eight": "8",
+    "nine": "9",
+    "ten": "10",
+    "eleven": "11",
+    "twelve": "12",
+    "thirteen": "13",
+    "fourteen": "14",
+    "fifteen": "15",
+    "sixteen": "16",
+    "seventeen": "17",
+    "eighteen": "18",
+    "nineteen": "19",
+    "twenty": "20",
+}
+
+
+ARABIC_NUMBER_WORDS = {
+    "واحد": "1",
+    "واحدة": "1",
+    "اثنان": "2",
+    "اثنين": "2",
+    "ثلاثة": "3",
+    "أربعة": "4",
+    "اربعة": "4",
+    "خمسة": "5",
+    "ستة": "6",
+    "سبعة": "7",
+    "سبع": "7",
+    "ثمانية": "8",
+    "ثمان": "8",
+    "تسعة": "9",
+    "عشرة": "10",
+}
+
+
+def extract_service_count(
+    brief: str
+) -> str | None:
+    """
+    Extract an explicit number associated with services.
+
+    Example:
+    Seven Ministry of Agriculture services -> 7
+    7 services -> 7
+    سبع خدمات -> 7
+    """
+
+    text = brief.casefold()
+
+
+    arabic_digit_map = str.maketrans(
+        "٠١٢٣٤٥٦٧٨٩",
+        "0123456789"
+    )
+
+    normalized = text.translate(
+        arabic_digit_map
+    )
+
+
+    english_words = (
+        "|".join(
+            NUMBER_WORDS.keys()
+        )
+    )
+
+
+    # Supports cases such as:
+    # Seven Ministry of Agriculture services
+
+    english_pattern = (
+        rf"\b("
+        rf"\d+|{english_words}"
+        rf")\b"
+        rf"(?:\s+[\w'-]+){{0,6}}"
+        rf"\s+services?\b"
+    )
+
+
+    english_match = re.search(
+        english_pattern,
+        normalized,
+        flags=re.IGNORECASE
+    )
+
+
+    if english_match:
+
+        value = (
+            english_match
+            .group(1)
+            .casefold()
+        )
+
+        return NUMBER_WORDS.get(
+            value,
+            value
+        )
+
+
+    # Arabic service count.
+
+    for word, value in (
+        ARABIC_NUMBER_WORDS.items()
+    ):
+
+        pattern = (
+            rf"{re.escape(word)}"
+            rf"(?:\s+\S+){{0,4}}"
+            rf"\s+(?:خدمة|خدمات)"
+        )
+
+        if re.search(
+            pattern,
+            normalized
+        ):
+            return value
+
+
+    arabic_numeric_match = re.search(
+        r"\b(\d+)\b"
+        r"(?:\s+\S+){0,4}"
+        r"\s+(?:خدمة|خدمات)",
+        normalized
+    )
+
+
+    if arabic_numeric_match:
+
+        return (
+            arabic_numeric_match
+            .group(1)
+        )
+
+
+    return None
+
+
+# --------------------------------------------------
+# Subject Detection
+# --------------------------------------------------
+
+def detect_service_subject(
+    brief: str
+) -> str:
+
+    text = brief.casefold()
+
+
+    if (
+        "ministry of agriculture"
+        in text
+        or "وزارة الزراعة"
+        in text
+    ):
+
+        return (
+            "Ministry of Agriculture services"
+        )
+
+
+    return "government services"
 
 
 # --------------------------------------------------
@@ -250,24 +545,48 @@ def select_tone(
 ):
 
     tone_context_map = {
-        "service_adoption": "service_announcement",
-        "engagement": "citizen_engagement",
-        "opportunity_recruitment": "internship",
-        "institutional_update": "official_announcement",
+        "service_adoption": (
+            "service_announcement"
+        ),
+
+        "engagement": (
+            "citizen_engagement"
+        ),
+
+        "opportunity_recruitment": (
+            "internship"
+        ),
+
+        "institutional_update": (
+            "official_announcement"
+        ),
     }
 
-    tone_context = tone_context_map.get(objective)
+
+    tone_context = (
+        tone_context_map.get(
+            objective
+        )
+    )
+
 
     if tone_context:
 
         contextual_tone = (
             brand_data
-            .get("tone_by_context", {})
-            .get(tone_context)
+            .get(
+                "tone_by_context",
+                {}
+            )
+            .get(
+                tone_context
+            )
         )
+
 
         if contextual_tone:
             return contextual_tone
+
 
     return brand_data.get(
         "default_tone",
@@ -286,28 +605,44 @@ def recommend_format(
     platform: str
 ) -> str:
 
-    platform = platform.lower()
-    text = brief.lower()
+    platform = (
+        platform
+        .strip()
+        .casefold()
+    )
+
+    text = brief.casefold()
+
 
     if platform == "instagram":
 
-        if "how to" in text or "tutorial" in text:
+        if (
+            "how to" in text
+            or "tutorial" in text
+        ):
+
             return "Reel"
+
 
         if objective in [
             "service_adoption",
             "engagement",
-            "opportunity_recruitment"
+            "opportunity_recruitment",
         ]:
+
             return "Carousel"
 
+
         return "Carousel"
+
 
     if platform == "linkedin":
         return "Professional Post"
 
+
     if platform == "facebook":
         return "Informational Post"
+
 
     return "Social Media Post"
 
@@ -319,56 +654,84 @@ def recommend_format(
 def generate_campaign_angle(
     brand: str,
     objective: str,
-    audience
+    audience,
+    brief: str = ""
 ) -> str:
 
-    audience_text = format_audience_list(
-        audience
+    audience_text = (
+        format_audience_list(
+            audience
+        )
     )
+
 
     if brand == "dawlati":
 
         if objective == "service_adoption":
-            return (
-                f"Show {audience_text} how the digital service "
-                "can make government procedures easier and more efficient."
+
+            service_count = (
+                extract_service_count(
+                    brief
+                )
             )
+
+            service_subject = (
+                detect_service_subject(
+                    brief
+                )
+            )
+
+
+            if service_count:
+
+                return (
+                    f"Announce that {service_count} "
+                    f"{service_subject} are now available "
+                    f"online through Dawlati and encourage "
+                    f"{audience_text} to explore the "
+                    f"available services."
+                )
+
+
+            return (
+                "Announce the government services described "
+                "in the campaign brief and encourage "
+                f"{audience_text} to explore the available "
+                "service information through Dawlati."
+            )
+
 
         if objective == "engagement":
+
             return (
-                f"Encourage {audience_text} to participate and "
-                "share their feedback to help improve citizen services."
+                f"Invite {audience_text} to participate "
+                "and share feedback on the topic described "
+                "in the campaign brief."
             )
 
-        return (
-            "Highlight how Dawlati makes government services "
-            "easier to find, understand, and access."
-        )
-
-    if brand == "matchmaking":
-
-        if objective == "opportunity_recruitment":
-            return (
-                f"Show {audience_text} how they can contribute "
-                "their skills and expertise to meaningful "
-                "public-sector initiatives."
-            )
 
         return (
-            "Highlight opportunities for collaboration between "
-            "Lebanese talent and public-sector institutions."
+            "Communicate the Dawlati information stated in "
+            "the campaign brief clearly and encourage users "
+            "to explore the relevant government-service "
+            "information."
         )
+
 
     if objective == "institutional_update":
+
         return (
-            "Explain the initiative clearly, show why it matters, "
-            "and connect it to public-sector modernization "
-            "and citizen impact."
+            "Explain the initiative described in the "
+            "campaign brief clearly and connect it only "
+            "to the public-sector context supported by "
+            "the brief."
         )
 
+
     return (
-        "Communicate the initiative clearly and focus on "
-        "its value for citizens and public institutions."
+        "Communicate the information in the campaign brief "
+        "clearly without adding unsupported benefits, "
+        "results, or claims."
     )
 
 
@@ -378,28 +741,160 @@ def generate_campaign_angle(
 
 def select_cta(
     brand: str,
-    objective: str
+    objective: str,
+    brief: str = ""
 ) -> str:
 
-    if objective == "service_adoption":
-        return "Explore the available service on Dawlati"
+    if (
+        brand == "dawlati"
+        and objective == "service_adoption"
+    ):
+
+        service_count = (
+            extract_service_count(
+                brief
+            )
+        )
+
+
+        if service_count:
+
+            return (
+                f"Explore the {service_count} "
+                "available services on Dawlati"
+            )
+
+
+        return (
+            "Explore the available services "
+            "on Dawlati"
+        )
+
 
     if objective == "engagement":
-        return "Participate and share your feedback"
 
-    if objective == "opportunity_recruitment":
-        return "Explore the opportunity and apply"
+        return (
+            "Participate and share your feedback"
+        )
+
 
     if objective == "institutional_update":
-        return "Learn more about the initiative"
+
+        return (
+            "Learn more about the initiative"
+        )
+
 
     if brand == "dawlati":
-        return "Discover available services on Dawlati"
 
-    if brand == "matchmaking":
-        return "Explore available opportunities"
+        return (
+            "Discover available services on Dawlati"
+        )
+
 
     return "Learn more"
+
+
+# --------------------------------------------------
+# Strategy Safety Validation
+# --------------------------------------------------
+
+def validate_campaign_strategy(
+    brief: str,
+    campaign_angle: str,
+    cta: str
+) -> dict:
+
+    strategy_text = (
+        campaign_angle
+        + "\n"
+        + cta
+    )
+
+
+    factual_result = (
+        validate_factual_claims(
+            brief=brief,
+            generated_text=strategy_text
+        )
+    )
+
+
+    # Number preservation is handled separately for
+    # service counts. Other numbers such as years or
+    # dates do not necessarily need to appear in the
+    # high-level strategy.
+
+    blocking_issues = [
+        issue
+
+        for issue
+        in factual_result[
+            "issues"
+        ]
+
+        if issue.get(
+            "type"
+        )
+        != "missing_explicit_number"
+    ]
+
+
+    service_count = (
+        extract_service_count(
+            brief
+        )
+    )
+
+
+    if (
+        service_count
+        and service_count
+        not in strategy_text
+    ):
+
+        blocking_issues.append(
+            {
+                "type": (
+                    "missing_service_count"
+                ),
+
+                "message": (
+                    "The campaign strategy did not "
+                    "preserve the explicit service "
+                    f"count {service_count}."
+                )
+            }
+        )
+
+
+    if blocking_issues:
+
+        messages = [
+            issue.get(
+                "message",
+                "Unsafe strategy content."
+            )
+
+            for issue
+            in blocking_issues
+        ]
+
+        raise StrategyValidationError(
+            "Campaign strategy failed factual "
+            "validation: "
+            + "; ".join(
+                messages
+            )
+        )
+
+
+    return {
+        "valid": True,
+        "status": "PASS",
+        "issues": [],
+        "service_count": service_count,
+    }
 
 
 # --------------------------------------------------
@@ -415,9 +910,25 @@ def generate_campaign_strategy(
     audience_input: str = "",
 ):
 
-    brands = CONFIG["brands"]
+    if not isinstance(
+        brief,
+        str
+    ) or not brief.strip():
 
+        raise ValueError(
+            "Campaign brief cannot be empty."
+        )
+
+
+    brands = CONFIG[
+        "brands"
+    ]
+
+
+    # --------------------------------------------------
     # Brand
+    # --------------------------------------------------
+
     if selected_brand == "Auto Detect":
 
         brand_key = detect_brand(
@@ -429,16 +940,42 @@ def generate_campaign_strategy(
         brand_key = next(
             (
                 key
-                for key, value in brands.items()
-                if value["display_name"] == selected_brand
+
+                for key, value
+                in brands.items()
+
+                if value[
+                    "display_name"
+                ] == selected_brand
             ),
+
             "omsar",
         )
 
-    brand_data = brands[brand_key]
 
+    if brand_key not in brands:
+
+        raise ValueError(
+            f"Unknown brand key: {brand_key}"
+        )
+
+    # Fail closed unless the selected brand's approved knowledge loads.
+    grounding = build_grounding_context(brand_key)
+
+
+    brand_data = brands[
+        brand_key
+    ]
+
+
+    # --------------------------------------------------
     # Objective
-    if selected_objective == "Auto Detect":
+    # --------------------------------------------------
+
+    if (
+        selected_objective
+        == "Auto Detect"
+    ):
 
         objective = detect_objective(
             brief,
@@ -449,66 +986,148 @@ def generate_campaign_strategy(
 
         objective = (
             selected_objective
-            .lower()
-            .replace(" ", "_")
+            .strip()
+            .casefold()
+            .replace(
+                " ",
+                "_"
+            )
         )
 
+
+    # --------------------------------------------------
     # Audience
+    # --------------------------------------------------
+
     if audience_input.strip():
 
         audiences = [
             audience.strip()
-            for audience in audience_input.split(",")
+
+            for audience
+            in audience_input.split(
+                ","
+            )
+
             if audience.strip()
         ]
 
     else:
 
-        audiences = detect_audience(
-            brief,
-            brand_key
+        audiences = (
+            detect_audience(
+                brief,
+                brand_key
+            )
         )
 
+
+    # --------------------------------------------------
     # Tone
+    # --------------------------------------------------
+
     tone = select_tone(
         brand_data,
         objective
     )
 
+
+    # --------------------------------------------------
     # Format
-    recommended_format = recommend_format(
-        brief,
-        brand_key,
-        objective,
-        platform
+    # --------------------------------------------------
+
+    recommended_format = (
+        recommend_format(
+            brief,
+            brand_key,
+            objective,
+            platform
+        )
     )
 
-    # Campaign angle
-    campaign_angle = generate_campaign_angle(
-        brand_key,
-        objective,
-        audiences
+
+    # --------------------------------------------------
+    # Campaign Angle
+    # --------------------------------------------------
+
+    campaign_angle = (
+        generate_campaign_angle(
+            brand_key,
+            objective,
+            audiences,
+            brief=brief
+        )
     )
 
+
+    # --------------------------------------------------
     # CTA
+    # --------------------------------------------------
+
     cta = select_cta(
         brand_key,
-        objective
+        objective,
+        brief=brief
     )
+
+
+    # --------------------------------------------------
+    # Independent Strategy Validation
+    # --------------------------------------------------
+
+    strategy_validation = (
+        validate_campaign_strategy(
+            brief=brief,
+            campaign_angle=campaign_angle,
+            cta=cta
+        )
+    )
+
+
+    # --------------------------------------------------
+    # Result
+    # --------------------------------------------------
 
     return {
         "brand_key": brand_key,
-        "brand": brand_data["display_name"],
+
+        "brand": brand_data[
+            "display_name"
+        ],
+
         "objective": (
             objective
-            .replace("_", " ")
+            .replace(
+                "_",
+                " "
+            )
             .title()
         ),
+
         "target_audience": audiences,
+
         "platform": platform,
+
         "languages": languages,
+
         "tone": tone,
-        "recommended_format": recommended_format,
-        "campaign_angle": campaign_angle,
+
+        "recommended_format": (
+            recommended_format
+        ),
+
+        "campaign_angle": (
+            campaign_angle
+        ),
+
         "cta": cta,
+
+        "strategy_validation": (
+            strategy_validation
+        ),
+
+        "grounding_provenance": {
+            "source_ids": list(grounding.source_ids),
+            "record_names": list(grounding.record_names),
+        },
     }

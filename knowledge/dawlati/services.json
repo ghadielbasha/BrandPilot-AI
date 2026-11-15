@@ -1,0 +1,100 @@
+{
+  "brand": "dawlati",
+  "record_type": "service_catalog",
+  "classification": "public",
+  "status": "approved",
+  "schema_version": "1.0",
+  "last_verified": "2026-11-11",
+
+  "catalog_rules": {
+    "allowed_service_statuses": [
+      "live",
+      "staging",
+      "informational",
+      "external",
+      "unavailable"
+    ],
+
+    "allowed_capability_values": [
+      "supported",
+      "not_supported",
+      "unknown"
+    ],
+
+    "required_service_fields": [
+      "id",
+      "entity",
+      "names",
+      "status",
+      "capabilities",
+      "source_ids"
+    ],
+
+    "rules": [
+      "Every service must have a unique stable ID.",
+      "Every service must reference at least one approved source.",
+      "Service names must come from approved source data.",
+      "Do not infer capabilities from the service name.",
+      "A listed service is not automatically a fully digital service.",
+      "Digital application must be explicitly confirmed.",
+      "Online payment must be explicitly confirmed.",
+      "Request tracking must be explicitly confirmed.",
+      "Unknown capability values must remain unknown until verified.",
+      "Do not invent fees, requirements, documents, processing times, eligibility conditions, URLs, or service descriptions."
+    ]
+  },
+
+  "service_template": {
+    "id": "EXAMPLE-ONLY-NOT-A-REAL-SERVICE",
+
+    "entity": {
+      "id": "",
+      "name_en": "",
+      "name_ar": ""
+    },
+
+    "names": {
+      "en": "",
+      "ar": "",
+      "fr": ""
+    },
+
+    "description": {
+      "en": "",
+      "ar": "",
+      "fr": ""
+    },
+
+    "status": "informational",
+
+    "capabilities": {
+      "information_available": "supported",
+      "digital_application": "unknown",
+      "online_payment": "unknown",
+      "request_tracking": "unknown",
+      "external_application": "unknown"
+    },
+
+    "links": {
+      "service_page": null,
+      "application_url": null,
+      "external_url": null
+    },
+
+    "verified_facts": {
+      "requirements": [],
+      "documents": [],
+      "fees": [],
+      "processing_time": null,
+      "eligibility": []
+    },
+
+    "source_ids": []
+  },
+
+  "services": [],
+
+  "source_ids": [
+    "DAWLATI-WEB-004"
+  ]
+}

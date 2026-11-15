@@ -1,6 +1,8 @@
 .venv/
+venv/
 .env
 .env.*
+!.env.example
 __pycache__/
 *.py[cod]
 .streamlit/secrets.toml
@@ -9,6 +11,12 @@ __pycache__/
 .DS_Store
 Thumbs.db
 *.log
+logs/
+.pytest_cache/
+.coverage
 private/
 confidential/
 data/private/
+data/*.db
+data/*.sqlite
+backups/

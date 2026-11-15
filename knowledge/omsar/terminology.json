@@ -1,0 +1,173 @@
+{
+  "brand": "omsar",
+  "record_type": "terminology_dictionary",
+  "classification": "public",
+  "status": "approved",
+  "last_verified": "2026-11-11",
+
+  "terms": [
+    {
+      "id": "TERM-OMSAR-001",
+      "concept": "organization_name",
+      "preferred": {
+        "en": "Office of the Minister of State for Administrative Reform",
+        "ar": "مكتب وزير الدولة لشؤون التنمية الإدارية"
+      },
+      "acronym": "OMSAR",
+      "allowed_variants": {
+        "en": [
+          "OMSAR"
+        ],
+        "ar": [
+          "مكتب وزير الدولة لشؤون التنمية الإدارية"
+        ]
+      },
+      "forbidden_variants": {
+        "en": [],
+        "ar": []
+      },
+      "source_ids": [
+        "OMSAR-WEB-001"
+      ]
+    },
+
+    {
+      "id": "TERM-OMSAR-002",
+      "concept": "digital_transformation",
+      "preferred": {
+        "en": "Digital Transformation",
+        "ar": "التحول الرقمي"
+      },
+      "allowed_variants": {
+        "en": [
+          "digital transformation"
+        ],
+        "ar": [
+          "التحول الرقمي"
+        ]
+      },
+      "forbidden_variants": {
+        "en": [],
+        "ar": []
+      },
+      "source_ids": [
+        "OMSAR-WEB-001",
+        "OMSAR-WEB-002"
+      ]
+    },
+
+    {
+      "id": "TERM-OMSAR-003",
+      "concept": "administrative_reform",
+      "preferred": {
+        "en": "Administrative Reform",
+        "ar": "الإصلاح الإداري"
+      },
+      "allowed_variants": {
+        "en": [
+          "administrative reform"
+        ],
+        "ar": [
+          "الإصلاح الإداري"
+        ]
+      },
+      "forbidden_variants": {
+        "en": [],
+        "ar": []
+      },
+      "source_ids": [
+        "OMSAR-WEB-001"
+      ]
+    },
+
+    {
+      "id": "TERM-OMSAR-004",
+      "concept": "anti_corruption",
+      "preferred": {
+        "en": "Anti-Corruption",
+        "ar": "مكافحة الفساد"
+      },
+      "allowed_variants": {
+        "en": [
+          "anti-corruption",
+          "anti corruption"
+        ],
+        "ar": [
+          "مكافحة الفساد"
+        ]
+      },
+      "forbidden_variants": {
+        "en": [],
+        "ar": []
+      },
+      "source_ids": [
+        "OMSAR-WEB-001"
+      ]
+    },
+
+    {
+      "id": "TERM-OMSAR-005",
+      "concept": "public_administration",
+      "preferred": {
+        "en": "Public Administration",
+        "ar": "الإدارة العامة"
+      },
+      "allowed_variants": {
+        "en": [
+          "public administration"
+        ],
+        "ar": [
+          "الإدارة العامة"
+        ]
+      },
+      "forbidden_variants": {
+        "en": [],
+        "ar": []
+      },
+      "source_ids": [
+        "OMSAR-WEB-001",
+        "OMSAR-WEB-002"
+      ]
+    },
+
+    {
+      "id": "TERM-OMSAR-006",
+      "concept": "electronic_services",
+      "preferred": {
+        "en": "E-Services",
+        "ar": "الخدمات الإلكترونية"
+      },
+      "allowed_variants": {
+        "en": [
+          "e-services",
+          "electronic services"
+        ],
+        "ar": [
+          "الخدمات الإلكترونية"
+        ]
+      },
+      "forbidden_variants": {
+        "en": [],
+        "ar": []
+      },
+      "source_ids": [
+        "OMSAR-WEB-003"
+      ]
+    }
+  ],
+
+  "rules": {
+    "organization_name": {
+      "first_reference_en": "Prefer the full official name followed by OMSAR when appropriate.",
+      "later_reference_en": "OMSAR may be used.",
+      "arabic": "Use the official Arabic institutional name when the full name is required."
+    },
+
+    "general": [
+      "Do not translate official organization names freely.",
+      "Do not invent abbreviations.",
+      "Do not modify official Arabic names.",
+      "Prefer terminology listed in this dictionary over model-generated synonyms."
+    ]
+  }
+}

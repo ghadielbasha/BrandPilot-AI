@@ -1,0 +1,229 @@
+{
+  "brand": "dawlati",
+  "record_type": "terminology_dictionary",
+  "classification": "public",
+  "status": "approved",
+  "last_verified": "2026-11-11",
+
+  "terms": [
+    {
+      "id": "TERM-DAWLATI-001",
+      "concept": "platform_name",
+      "preferred": {
+        "en": "DAWLATI",
+        "ar": "دولتي"
+      },
+      "allowed_variants": {
+        "en": [
+          "DAWLATI",
+          "Dawlati"
+        ],
+        "ar": [
+          "دولتي",
+          "منصة «دولتي»",
+          "منصة دولتي"
+        ]
+      },
+      "forbidden_variants": {
+        "en": [],
+        "ar": [
+          "داولاتي",
+          "دوالتي",
+          "داولتي",
+          "دَولتي"
+        ]
+      },
+      "source_ids": [
+        "DAWLATI-WEB-003",
+        "DAWLATI-WEB-006"
+      ]
+    },
+
+    {
+      "id": "TERM-DAWLATI-002",
+      "concept": "government_services",
+      "preferred": {
+        "en": "Government Services",
+        "ar": "الخدمات الحكومية"
+      },
+      "allowed_variants": {
+        "en": [
+          "government services"
+        ],
+        "ar": [
+          "الخدمات الحكومية"
+        ]
+      },
+      "forbidden_variants": {
+        "en": [],
+        "ar": []
+      },
+      "source_ids": [
+        "DAWLATI-WEB-001",
+        "DAWLATI-WEB-003",
+        "DAWLATI-WEB-004"
+      ]
+    },
+
+    {
+      "id": "TERM-DAWLATI-003",
+      "concept": "government_service_directory",
+      "preferred": {
+        "en": "Government Service Directory",
+        "ar": "دليل الخدمات الحكومية"
+      },
+      "allowed_variants": {
+        "en": [
+          "Government Service Directory",
+          "government services directory"
+        ],
+        "ar": [
+          "دليل الخدمات الحكومية"
+        ]
+      },
+      "forbidden_variants": {
+        "en": [],
+        "ar": []
+      },
+      "source_ids": [
+        "DAWLATI-WEB-001",
+        "DAWLATI-WEB-003",
+        "DAWLATI-WEB-004"
+      ]
+    },
+
+    {
+      "id": "TERM-DAWLATI-004",
+      "concept": "digital_services",
+      "preferred": {
+        "en": "Digital Services",
+        "ar": "الخدمات الرقمية"
+      },
+      "allowed_variants": {
+        "en": [
+          "digital services"
+        ],
+        "ar": [
+          "الخدمات الرقمية"
+        ]
+      },
+      "forbidden_variants": {
+        "en": [],
+        "ar": []
+      },
+      "source_ids": [
+        "DAWLATI-WEB-001",
+        "DAWLATI-WEB-002"
+      ]
+    },
+
+    {
+      "id": "TERM-DAWLATI-005",
+      "concept": "digital_application",
+      "preferred": {
+        "en": "Digital Application",
+        "ar": "التقديم الإلكتروني"
+      },
+      "allowed_variants": {
+        "en": [
+          "digital application",
+          "apply online"
+        ],
+        "ar": [
+          "التقديم الإلكتروني",
+          "التقديم عبر الإنترنت"
+        ]
+      },
+      "forbidden_variants": {
+        "en": [],
+        "ar": []
+      },
+      "source_ids": [
+        "DAWLATI-WEB-001",
+        "DAWLATI-WEB-002"
+      ]
+    },
+
+    {
+      "id": "TERM-DAWLATI-006",
+      "concept": "online_payment",
+      "preferred": {
+        "en": "Online Payment",
+        "ar": "الدفع الإلكتروني"
+      },
+      "allowed_variants": {
+        "en": [
+          "online payment",
+          "digital payment"
+        ],
+        "ar": [
+          "الدفع الإلكتروني"
+        ]
+      },
+      "forbidden_variants": {
+        "en": [],
+        "ar": []
+      },
+      "source_ids": [
+        "DAWLATI-WEB-001",
+        "DAWLATI-WEB-003"
+      ]
+    },
+
+    {
+      "id": "TERM-DAWLATI-007",
+      "concept": "request_tracking",
+      "preferred": {
+        "en": "Request Tracking",
+        "ar": "متابعة الطلبات"
+      },
+      "allowed_variants": {
+        "en": [
+          "request tracking",
+          "track requests"
+        ],
+        "ar": [
+          "متابعة الطلبات"
+        ]
+      },
+      "forbidden_variants": {
+        "en": [],
+        "ar": []
+      },
+      "source_ids": [
+        "DAWLATI-WEB-001",
+        "DAWLATI-WEB-003"
+      ]
+    }
+  ],
+
+  "rules": {
+    "platform_name": {
+      "english": "Use DAWLATI or Dawlati.",
+      "arabic": "Use دولتي. When referring to the platform explicitly, prefer منصة «دولتي».",
+      "forbidden_instruction": "Never use داولاتي, دوالتي, داولتي, or دَولتي."
+    },
+
+    "service_language": [
+      "Do not describe a service as fully digital unless approved service-level evidence confirms this.",
+      "Do not use apply online unless the specific service supports digital application.",
+      "Do not mention online payment unless the specific service supports online payment.",
+      "Do not mention request tracking unless the specific service supports request tracking."
+    ],
+
+    "general": [
+      "Do not translate official platform names freely.",
+      "Do not invent service terminology.",
+      "Prefer approved terminology over model-generated synonyms.",
+      "Do not modify the official Arabic spelling of دولتي."
+    ]
+  },
+
+  "source_ids": [
+    "DAWLATI-WEB-001",
+    "DAWLATI-WEB-002",
+    "DAWLATI-WEB-003",
+    "DAWLATI-WEB-004",
+    "DAWLATI-WEB-006"
+  ]
+}
