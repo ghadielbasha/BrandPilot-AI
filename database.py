@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Mapping
 
+from auth import Role, hash_password
 from config import DB_PATH
 
 
@@ -85,6 +87,10 @@ class ClosingConnection(sqlite3.Connection):
             self.close()
 
 
+class DemoAdminBootstrapError(RuntimeError):
+    """Safe startup error that never contains bootstrap credentials."""
+
+
 def connect(db_path: str | Path | None = None) -> sqlite3.Connection:
     path = Path(db_path or DB_PATH)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -98,6 +104,51 @@ def connect(db_path: str | Path | None = None) -> sqlite3.Connection:
 def initialize_database(db_path: str | Path | None = None) -> None:
     with connect(db_path) as connection:
         connection.executescript(SCHEMA)
+    bootstrap_demo_admin(db_path)
+
+
+def bootstrap_demo_admin(
+    db_path: str | Path | None = None,
+    environment: Mapping[str, str] | None = None,
+) -> bool:
+    """Create the optional demo administrator only when no users exist."""
+    env = environment if environment is not None else os.environ
+
+    try:
+        with connect(db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            if connection.execute("SELECT 1 FROM users LIMIT 1").fetchone():
+                return False
+
+            username = env.get("BRANDPILOT_DEMO_ADMIN_USERNAME", "").strip()
+            password = env.get("BRANDPILOT_DEMO_ADMIN_PASSWORD", "")
+            display_name = env.get(
+                "BRANDPILOT_DEMO_ADMIN_DISPLAY_NAME", ""
+            ).strip()
+            if not username or not password.strip() or not display_name:
+                return False
+
+            password_hash = hash_password(password)
+            cursor = connection.execute(
+                """
+                INSERT INTO users(username, display_name, role, password_hash)
+                VALUES(?, ?, ?, ?)
+                """,
+                (username, display_name, Role.ADMIN.value, password_hash),
+            )
+            connection.execute(
+                """
+                INSERT INTO audit_events(
+                    actor_user_id, action, entity_type, entity_id, metadata
+                ) VALUES(NULL, 'user_created', 'user', ?, '{"role":"ADMIN"}')
+                """,
+                (str(cursor.lastrowid),),
+            )
+            return True
+    except Exception:
+        raise DemoAdminBootstrapError(
+            "The optional demo administrator could not be created."
+        ) from None
 
 
 @contextmanager
