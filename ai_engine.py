@@ -218,11 +218,22 @@ def detect_audience(
 
     text = brief.casefold()
 
+    explicit_patterns = (
+        ("University students", r"\buniversity students?\b|طلاب الجامعات"),
+        ("Farmers", r"\bfarmers?\b|المزارعين|المزارعون"),
+        ("Producers", r"\bproducers?\b|المنتجين|المنتجون"),
+    )
+    explicit_audiences = [
+        label for label, pattern in explicit_patterns
+        if re.search(pattern, text, flags=re.IGNORECASE)
+    ]
+    if explicit_audiences:
+        return explicit_audiences
+
 
     audience_map = {
         "farmer": [
             "Farmers",
-            "Agricultural businesses",
         ],
 
         "agriculture": [
@@ -239,7 +250,6 @@ def detect_audience(
 
         "student": [
             "University students",
-            "Fresh graduates",
         ],
 
         "graduate": [
@@ -1021,6 +1031,18 @@ def generate_campaign_strategy(
             )
         )
 
+    default_audiences = {
+        "omsar": ["Citizens", "Government institutions", "Partners"],
+        "dawlati": ["Citizens", "Businesses"],
+    }
+    audience_source = "user_input" if audience_input.strip() else "brief"
+    audience_confirmation_required = (
+        not audience_input.strip()
+        and audiences == default_audiences.get(brand_key)
+    )
+    if audience_confirmation_required:
+        audience_source = "inferred_default"
+
 
     # --------------------------------------------------
     # Tone
@@ -1105,6 +1127,10 @@ def generate_campaign_strategy(
         ),
 
         "target_audience": audiences,
+
+        "audience_source": audience_source,
+
+        "audience_confirmation_required": audience_confirmation_required,
 
         "platform": platform,
 

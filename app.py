@@ -6,12 +6,14 @@ import streamlit as st
 
 from ai_engine import CONFIG, generate_campaign_strategy
 from auth import Role
+from campaign_policy import can_save_draft, content_is_compliant
 from config import AI_PROVIDER, DB_PATH, ENVIRONMENT, MODEL_NAME
 from content_generator import generate_marketing_content
 from grounding_engine import SUPPORTED_BRANDS, build_grounding_context
 from health import check_health
 from repositories import Repository
 from services import AuthorizationError, BrandPilotService, WorkflowError
+from text_rendering import format_arabic_html, format_english_html, format_text_html
 
 
 st.set_page_config(page_title="BrandPilot AI", page_icon="BP", layout="wide")
@@ -22,8 +24,25 @@ service = BrandPilotService(repository)
 def safe_error(message: str, error: Exception | None = None) -> None:
     st.error(message)
     if error and st.session_state.get("user", {}).get("role") == Role.ADMIN.value:
-        with st.expander("Technical details"):
-            st.code(str(error))
+        stages = {
+            "security_validation": "Security validation blocked the content.",
+            "terminology_validation": "Terminology validation blocked the content.",
+            "factual_validation": "Factual grounding validation blocked the content.",
+            "language_validation": "Language validation blocked the content.",
+        }
+        reason = next(
+            (label for key, label in stages.items() if key in str(error)),
+            "The request failed in a protected internal processing stage.",
+        )
+        with st.expander("Safe diagnostic details"):
+            st.write(reason)
+
+
+def render_directional_text(text: object, *, direction: str | None = None) -> None:
+    st.markdown(
+        format_text_html(text, direction=direction),
+        unsafe_allow_html=True,
+    )
 
 
 def login_page() -> None:
@@ -98,17 +117,26 @@ def create_campaign(actor: dict) -> None:
     strategy = st.session_state.get("draft_strategy")
     if not strategy:
         return
-    st.subheader("Approved strategy")
+    st.subheader("Campaign strategy")
     left, right = st.columns(2)
     left.write(f"**Brand:** {strategy['brand']}  \n**Objective:** {strategy['objective']}  \n**Audience:** {', '.join(strategy['target_audience'])}")
     right.write(f"**Platform:** {strategy['platform']}  \n**Format:** {strategy['recommended_format']}  \n**Languages:** {', '.join(strategy['languages'])}")
     st.info(strategy["campaign_angle"])
-    if st.button("Generate marketing content", type="primary"):
+    audience_confirmed = True
+    if strategy.get("audience_confirmation_required"):
+        audience_confirmed = st.checkbox(
+            "Confirm the inferred target audience before generation"
+        )
+        st.caption("BrandPilot will not silently add an inferred audience.")
+    if st.button(
+        "Generate marketing content", type="primary", disabled=not audience_confirmed
+    ):
         try:
-            with st.spinner("Generating locally and running all validators..."):
+            with st.spinner("Generating content and checking it…"):
                 st.session_state.draft_content = generate_marketing_content(st.session_state.draft_brief, strategy)
                 repository.audit(actor["id"], "content_generated", "campaign_draft", metadata={
-                    "repair_attempted": bool(st.session_state.draft_content.get("repair", {}).get("repair_attempted"))
+                    "repair_attempted": bool(st.session_state.draft_content.get("repair", {}).get("repair_attempted")),
+                    "generation_source": st.session_state.draft_content.get("generation_source"),
                 })
         except Exception as error:
             repository.audit(actor["id"], "content_generation_blocked", "campaign_draft")
@@ -116,7 +144,11 @@ def create_campaign(actor: dict) -> None:
     content = st.session_state.get("draft_content")
     if content:
         render_content(content)
-    if st.button("Save draft", disabled=content is None):
+    role_can_save = can_save_draft(actor["role"])
+    if not role_can_save:
+        st.info("Reviewers have read-only campaign access and cannot save drafts.")
+    save_enabled = role_can_save and content_is_compliant(content)
+    if st.button("Save draft", disabled=not save_enabled):
         try:
             saved = service.create_campaign(actor, campaign_payload(st.session_state.draft_brief, strategy, content))
             st.success(f"Campaign #{saved['id']} saved as Draft.")
@@ -127,35 +159,58 @@ def create_campaign(actor: dict) -> None:
 
 def render_content(content: dict) -> None:
     tabs = st.tabs(["Arabic", "English", "Structure", "Visual", "Validation"])
-    tabs[0].write(content.get("caption_ar") or "Not requested")
-    tabs[1].write(content.get("caption_en") or "Not requested")
+    with tabs[0]:
+        st.markdown(
+            format_arabic_html(content.get("caption_ar") or "Not requested"),
+            unsafe_allow_html=True,
+        )
+    with tabs[1]:
+        st.markdown(
+            format_english_html(content.get("caption_en") or "Not requested"),
+            unsafe_allow_html=True,
+        )
     with tabs[2]:
         for item in content.get("content_structure", []):
-            st.markdown(f"**{item['number']}. {item['headline']}** — {item['body']}")
+            render_directional_text(f"{item['number']}. {item['headline']}")
+            render_directional_text(item["body"])
+            st.divider()
     with tabs[3]:
-        st.write(content.get("visual_concept", ""))
-        st.code(content.get("visual_generation_prompt", ""), language=None)
-        st.write(f"**CTA:** {content.get('cta', '')}")
-        st.write(" ".join(content.get("hashtags", [])))
+        render_directional_text(content.get("visual_concept", ""))
+        render_directional_text(content.get("visual_generation_prompt", ""))
+        render_directional_text(f"CTA: {content.get('cta', '')}")
+        render_directional_text(" ".join(content.get("hashtags", [])))
     with tabs[4]:
         cols = st.columns(4)
         for col, key, label in zip(cols, ("security_validation", "terminology_validation", "factual_validation", "language_validation"), ("Security", "Terminology", "Factual", "Language")):
             col.metric(label, (content.get(key) or {}).get("status", "N/A"))
         repair = content.get("repair", {})
+        st.write(f"**Generation source:** {content.get('generation_source', 'Unknown')}")
         st.write(f"**Repair attempted:** {'Yes' if repair.get('repair_attempted') else 'No'}")
         if repair.get("initial_validation_error"):
             with st.expander("Initial validator reason"):
-                st.write(repair["initial_validation_error"])
+                render_directional_text(repair["initial_validation_error"])
 
 
 def campaign_detail(actor: dict, campaign: dict) -> None:
     st.subheader(f"Campaign #{campaign['id']} · {campaign['status'].replace('_', ' ').title()}")
     st.write(f"**Brand:** {campaign['brand']} · **Version:** {campaign['version']} · **Platform:** {campaign['platform']}")
-    st.write(f"**Brief:** {campaign['original_brief']}")
+    st.write("**Brief:**")
+    render_directional_text(campaign["original_brief"])
     if campaign.get("generated_strategy"):
-        with st.expander("Strategy", expanded=True): st.json(campaign["generated_strategy"])
+        strategy = campaign["generated_strategy"]
+        st.write("**Campaign strategy**")
+        st.write(
+            f"{strategy.get('brand', campaign['brand'])} · "
+            f"{strategy.get('objective', campaign['objective'])} · "
+            f"{', '.join(strategy.get('target_audience', []))}"
+        )
+        render_directional_text(strategy.get("campaign_angle", ""))
+        with st.expander("Technical / diagnostic details", expanded=False):
+            st.json(strategy)
     if campaign.get("generated_content"): render_content(campaign["generated_content"])
-    if campaign.get("review_comment"): st.warning(f"Review comment: {campaign['review_comment']}")
+    if campaign.get("review_comment"):
+        st.warning("Review comment")
+        render_directional_text(campaign["review_comment"])
     if campaign["status"] in {"DRAFT", "REJECTED"} and actor["role"] in {Role.ADMIN.value, Role.EDITOR.value}:
         if st.button("Submit for review", key=f"submit-{campaign['id']}"):
             try: service.submit(actor, campaign["id"]); st.rerun()
@@ -221,7 +276,13 @@ def system_page() -> None:
     st.caption(
         f"Environment: {ENVIRONMENT} · Provider: {AI_PROVIDER} · Model: {MODEL_NAME}"
     )
-    st.json(check_health(check_model=True))
+    health = check_health(check_model=True)
+    st.write(f"**Provider:** {health['provider']}")
+    st.write(f"**Model:** {health['model']}")
+    st.write(f"**Provider status:** {health['provider_status']}")
+    st.write(f"**Last probe time:** {health['last_probe_time'] or 'Not checked'}")
+    with st.expander("Technical / diagnostic details", expanded=False):
+        st.json(health)
 
 
 if "user" not in st.session_state:

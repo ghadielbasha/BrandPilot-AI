@@ -223,27 +223,31 @@ def check_ai_provider_health(ollama_host: str) -> str:
     """Perform a provider-specific connectivity and model availability check."""
     settings = get_ai_provider_settings()
     if settings.provider == OLLAMA_PROVIDER:
-        import json
-        import urllib.request
-
         try:
-            with urllib.request.urlopen(
-                f"{ollama_host.rstrip('/')}/api/tags", timeout=3
-            ) as response:
-                models = json.load(response).get("models", [])
-            available = any(
-                item.get("name", "").split(":")[0]
-                == settings.model.split(":")[0]
-                for item in models
+            _ollama_chat(
+                model=settings.model,
+                messages=[{"role": "user", "content": "Reply OK."}],
+                think=False,
+                options={"temperature": 0, "num_predict": 4},
             )
-            return "Healthy" if available else "Model unavailable"
+            return "Healthy"
         except Exception:
             return "Unreachable"
 
     try:
         api_key = _groq_api_key()
         client = _create_groq_client(api_key)
-        client.models.retrieve(settings.model)
+        client.chat.completions.create(
+            model=settings.model,
+            messages=[
+                {"role": "system", "content": "Provider health probe."},
+                {"role": "user", "content": "Reply OK."},
+            ],
+            temperature=0,
+            reasoning_effort="none",
+            reasoning_format="hidden",
+            max_completion_tokens=4,
+        )
         return "Healthy"
     except AIProviderConfigurationError:
         return "Unhealthy: GROQ_API_KEY is not configured"

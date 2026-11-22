@@ -262,6 +262,7 @@ class ContentGeneratorRepairTests(
 
         self.assertFalse(result["fallback"]["attempted"])
         self.assertFalse(result["fallback"]["successful"])
+        self.assertEqual(result["generation_source"], "AI")
 
 
         self.assertFalse(
@@ -333,6 +334,7 @@ class ContentGeneratorRepairTests(
 
         self.assertFalse(result["fallback"]["attempted"])
         self.assertFalse(result["fallback"]["successful"])
+        self.assertEqual(result["generation_source"], "AI repair")
 
 
         self.assertTrue(

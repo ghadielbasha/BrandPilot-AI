@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from ai_provider import check_ai_provider_health, get_ai_provider_settings
 from config import OLLAMA_HOST
 from database import connect
@@ -13,9 +15,10 @@ def check_health(db_path=None, check_model: bool = True) -> dict[str, str]:
     result = {
         "database": "Unhealthy",
         "knowledge": "Unhealthy",
-        "ai_provider": settings.provider,
-        "configured_model": settings.model,
-        "ai_model": "Not checked",
+        "provider": settings.provider,
+        "model": settings.model,
+        "provider_status": "Not checked",
+        "last_probe_time": None,
     }
     try:
         with connect(db_path) as db: db.execute("SELECT 1").fetchone()
@@ -26,5 +29,6 @@ def check_health(db_path=None, check_model: bool = True) -> dict[str, str]:
         result["knowledge"] = "Healthy"
     except Exception: pass
     if check_model:
-        result["ai_model"] = check_ai_provider_health(OLLAMA_HOST)
+        result["provider_status"] = check_ai_provider_health(OLLAMA_HOST)
+        result["last_probe_time"] = datetime.now(timezone.utc).isoformat()
     return result

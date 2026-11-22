@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 
 import content_generator
+from ai_engine import generate_campaign_strategy
 from content_generator import (
     BrandCheck,
     ContentItem,
@@ -126,6 +127,40 @@ class SafeFallbackTests(unittest.TestCase):
         self.assertEqual(result["fallback"]["reason"], "factual_grounding_failure")
         self.assertTrue(result["repair"]["repair_attempted"])
         self.assertFalse(result["repair"]["repair_successful"])
+        self.assertEqual(result["generation_source"], "deterministic fallback")
+        for key in (
+            "security_validation", "terminology_validation",
+            "factual_validation", "language_validation",
+        ):
+            self.assertEqual(result[key]["status"], "PASS")
+
+    @patch("content_generator._generate_initial_content")
+    @patch("content_generator._generate_repaired_content")
+    def test_exact_matchmaking_brief_has_validated_fallback(
+        self, mock_repair, mock_initial
+    ):
+        brief = (
+            "Create an Instagram carousel encouraging university students to "
+            "explore public-sector internship opportunities through Matchmaking."
+        )
+        strategy = generate_campaign_strategy(
+            brief, "Auto Detect", "Auto Detect", "Instagram", ["Arabic", "English"]
+        )
+        invalid = self._invalid_factual_content()
+        mock_initial.return_value = invalid
+        mock_repair.return_value = invalid
+
+        result = generate_marketing_content(brief, strategy)
+
+        self.assertEqual(result["generation_source"], "deterministic fallback")
+        self.assertEqual(strategy["target_audience"], ["University students"])
+        visible = " ".join(
+            [result["caption_ar"], result["caption_en"], result["visual_concept"],
+             result["visual_generation_prompt"], result["cta"],
+             str(result["content_structure"]), str(result["hashtags"])]
+        )
+        self.assertIn("Matchmaking", visible)
+        self.assertNotIn("citizens", visible.casefold())
         for key in (
             "security_validation", "terminology_validation",
             "factual_validation", "language_validation",

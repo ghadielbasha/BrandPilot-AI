@@ -51,6 +51,35 @@ class PilotServiceTests(unittest.TestCase):
             with self.assertRaises(AuthorizationError):
                 self.service.create_user(actor, "blocked", "Blocked", Role.EDITOR.value, PASSWORD)
 
+    def test_admin_and_editor_can_save_but_reviewer_is_read_only(self):
+        self.assertEqual(self.service.create_campaign(self.admin, self.payload)["status"], "DRAFT")
+        self.assertEqual(self.service.create_campaign(self.editor, self.payload)["status"], "DRAFT")
+        with self.assertRaises(AuthorizationError):
+            self.service.create_campaign(self.reviewer, self.payload)
+
+    def test_misspelled_matchmaking_cannot_be_saved(self):
+        for incorrect in ("Matcha" + "making", "Matcha" + "matching"):
+            payload = {
+                **self.payload,
+                "generated_content": {"caption_en": f"Explore {incorrect}."},
+            }
+            with self.subTest(incorrect=incorrect), self.assertRaises(WorkflowError):
+                self.service.create_campaign(self.editor, payload)
+
+    def test_legacy_misspelling_cannot_be_approved(self):
+        payload = {
+            **self.payload,
+            "generated_content": {
+                "caption_en": "Explore " + "Matcha" + "matching."
+            },
+        }
+        campaign = self.repo.create_campaign(self.editor["id"], payload)
+        self.repo.transition(
+            campaign["id"], self.editor["id"], "SUBMITTED_FOR_REVIEW"
+        )
+        with self.assertRaises(WorkflowError):
+            self.service.approve(self.reviewer, campaign["id"], "Reviewed")
+
     def test_editor_scope_and_reviewer_visibility_are_enforced(self):
         other = self.service.create_user(self.admin, "other", "Other", Role.EDITOR.value, PASSWORD)
         campaign = self.service.create_campaign(other, self.payload)

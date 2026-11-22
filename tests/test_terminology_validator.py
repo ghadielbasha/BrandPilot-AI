@@ -4,6 +4,7 @@ from validators.terminology_validator import (
     TerminologyValidationError,
     enforce_terminology,
     validate_terminology,
+    normalize_terminology,
 )
 
 
@@ -94,6 +95,18 @@ class TerminologyValidatorTests(unittest.TestCase):
                 "اكتشف الخدمات عبر داولاتي.",
                 "dawlati"
             )
+
+    def test_matchmaking_misspellings_are_normalized_then_pass(self):
+        for incorrect in ("Matcha" + "making", "Matcha" + "matching"):
+            with self.subTest(incorrect=incorrect):
+                blocked = validate_terminology(incorrect, "omsar")
+                self.assertEqual(blocked["status"], "BLOCK")
+                normalized = normalize_terminology(incorrect, "omsar")
+                self.assertEqual(normalized["text"], "Matchmaking")
+                self.assertEqual(
+                    validate_terminology(normalized["text"], "omsar")["status"],
+                    "PASS",
+                )
 
 
 if __name__ == "__main__":

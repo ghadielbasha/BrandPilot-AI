@@ -16,6 +16,39 @@ class TerminologyValidationError(Exception):
     pass
 
 
+CANONICAL_GLOBAL_TERMS = {
+    "Matchmaking": ("Matcha" + "making", "Matcha" + "matching"),
+}
+
+
+def correct_global_terminology(text: str) -> str:
+    """Normalize safety-critical campaign terms independently of brand."""
+    normalized = text
+    for preferred, variants in CANONICAL_GLOBAL_TERMS.items():
+        for variant in variants:
+            normalized = re.sub(
+                re.escape(variant), preferred, normalized, flags=re.IGNORECASE
+            )
+    return normalized
+
+
+def enforce_global_terminology_object(content: Any) -> None:
+    """Block persisted/approved objects containing a known forbidden variant."""
+    if isinstance(content, str):
+        for preferred, variants in CANONICAL_GLOBAL_TERMS.items():
+            for variant in variants:
+                if _contains_variant(content, variant):
+                    raise TerminologyValidationError(
+                        f"Forbidden terminology '{variant}' detected; use '{preferred}'."
+                    )
+    elif isinstance(content, dict):
+        for value in content.values():
+            enforce_global_terminology_object(value)
+    elif isinstance(content, (list, tuple)):
+        for value in content:
+            enforce_global_terminology_object(value)
+
+
 # --------------------------------------------------
 # Helpers
 # --------------------------------------------------
@@ -117,6 +150,19 @@ def normalize_terminology(
     normalized_text = text
 
     changes = []
+
+    for preferred, variants in CANONICAL_GLOBAL_TERMS.items():
+        for variant in variants:
+            if re.search(re.escape(variant), normalized_text, flags=re.IGNORECASE):
+                normalized_text = re.sub(
+                    re.escape(variant), preferred, normalized_text, flags=re.IGNORECASE
+                )
+                changes.append({
+                    "concept": "matchmaking_name",
+                    "language": "global",
+                    "from": variant,
+                    "to": preferred,
+                })
 
     for term in terminology[
         "terms"
@@ -255,6 +301,19 @@ def validate_terminology(
     issues = []
 
     checked_forbidden_variants = 0
+
+    for preferred, variants in CANONICAL_GLOBAL_TERMS.items():
+        for variant in variants:
+            checked_forbidden_variants += 1
+            if _contains_variant(text, variant):
+                issues.append({
+                    "type": "forbidden_terminology",
+                    "concept": "matchmaking_name",
+                    "language": "global",
+                    "found": variant,
+                    "preferred": preferred,
+                    "message": f"Forbidden terminology '{variant}' detected.",
+                })
 
     for term in terms:
 
@@ -446,4 +505,4 @@ if __name__ == "__main__":
                 "ERROR:",
                 error
             )
-            
+

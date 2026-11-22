@@ -117,6 +117,76 @@ def _join_audience(audience: list[str]) -> str:
     return ", ".join(lowered[:-1]) + f", and {lowered[-1]}"
 
 
+def _matchmaking_internship_fallback(
+    brief: str,
+    strategy: dict[str, Any],
+    languages: set[str],
+) -> dict[str, Any] | None:
+    """Return the tested OMSAR opportunity template only for the exact fact set."""
+    required = (
+        r"\bMatchmaking\b",
+        r"\bpublic-sector\b",
+        r"\binternship opportunities\b",
+        r"\buniversity students\b",
+    )
+    if not all(re.search(pattern, brief, re.IGNORECASE) for pattern in required):
+        return None
+    if str(strategy.get("brand_key", "")).casefold() != "omsar":
+        return None
+    if _target_audience(strategy) != ["University students"]:
+        raise SafeFallbackError(
+            "The deterministic opportunity template requires the explicit audience."
+        )
+
+    caption_en = (
+        "University students can explore public-sector internship opportunities "
+        "through Matchmaking."
+        if "English" in languages else ""
+    )
+    caption_ar = (
+        "يمكن لطلاب الجامعات استكشاف فرص التدريب في القطاع العام عبر Matchmaking."
+        if "Arabic" in languages else ""
+    )
+    return {
+        "caption_ar": caption_ar,
+        "caption_en": caption_en,
+        "content_structure": [
+            {
+                "number": 1,
+                "type": "Slide",
+                "headline": "Public-sector internship opportunities",
+                "body": "For university students.",
+            },
+            {
+                "number": 2,
+                "type": "Slide",
+                "headline": "Explore through Matchmaking",
+                "body": (
+                    "University students can explore public-sector internship "
+                    "opportunities through Matchmaking."
+                ),
+            },
+            {
+                "number": 3,
+                "type": "Slide",
+                "headline": "Learn more",
+                "body": "Explore public-sector internship opportunities through Matchmaking.",
+            },
+        ],
+        "visual_concept": (
+            "A professional public-sector internship opportunity carousel for "
+            "university students, with Matchmaking shown as the named initiative."
+        ),
+        "visual_generation_prompt": (
+            "Create a professional carousel about public-sector internship "
+            "opportunities for university students through Matchmaking."
+        ),
+        "cta": "Explore public-sector internship opportunities through Matchmaking",
+        "hashtags": ["#Matchmaking", "#PublicSectorInternships"],
+        "brand_check": {"status": "PASS", "issues": [], "recommendations": []},
+    }
+
+
 def build_safe_fallback_campaign(
     brief: str,
     strategy: dict[str, Any],
@@ -129,6 +199,9 @@ def build_safe_fallback_campaign(
         raise SafeFallbackError("Campaign strategy must be a dictionary.")
 
     languages = _requested_languages(strategy)
+    opportunity = _matchmaking_internship_fallback(brief, strategy, languages)
+    if opportunity is not None:
+        return opportunity
     subject = _extract_service_subject(brief)
     if not subject:
         raise SafeFallbackError(

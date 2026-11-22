@@ -6,6 +6,10 @@ from auth import Role, hash_password, verify_password
 from grounding_engine import SUPPORTED_BRANDS
 from repositories import Repository
 from validators.security_validator import SecurityValidationError, enforce_security
+from validators.terminology_validator import (
+    TerminologyValidationError,
+    enforce_global_terminology_object,
+)
 
 
 class AuthorizationError(PermissionError):
@@ -47,6 +51,7 @@ class BrandPilotService:
     def create_campaign(self, actor: dict, payload: dict) -> dict:
         self._require(actor, Role.ADMIN, Role.EDITOR)
         self._validate_brand(payload)
+        self._validate_campaign_terminology(payload)
         return self.repository.create_campaign(actor["id"], payload)
 
     def list_campaigns(self, actor: dict, status: str | None = None) -> list[dict]:
@@ -62,6 +67,7 @@ class BrandPilotService:
     def revise_campaign(self, actor: dict, campaign_id: int, payload: dict) -> dict:
         self._require(actor, Role.ADMIN, Role.EDITOR)
         self._validate_brand(payload)
+        self._validate_campaign_terminology(payload)
         campaign = self._campaign(campaign_id)
         current = self.repository.get_user(actor["id"])
         if current["role"] == Role.EDITOR.value and campaign["creator_user_id"] != actor["id"]:
@@ -84,6 +90,7 @@ class BrandPilotService:
         if campaign["status"] != "SUBMITTED_FOR_REVIEW": raise WorkflowError("Campaign is not awaiting review.")
         if campaign["creator_user_id"] == actor["id"]: raise AuthorizationError("Creators cannot approve their own campaigns.")
         self._validate_comment(comment)
+        self._validate_campaign_terminology(campaign)
         return self.repository.transition(campaign_id, actor["id"], "APPROVED", comment)
 
     def reject(self, actor: dict, campaign_id: int, comment: str) -> dict:
@@ -113,4 +120,13 @@ class BrandPilotService:
             enforce_security(comment, "review_comment")
         except SecurityValidationError as error:
             raise WorkflowError("The review comment failed security validation.") from error
+
+    @staticmethod
+    def _validate_campaign_terminology(payload: dict) -> None:
+        try:
+            enforce_global_terminology_object(payload.get("generated_content") or {})
+        except TerminologyValidationError as error:
+            raise WorkflowError(
+                "Campaign content contains non-canonical terminology."
+            ) from error
 

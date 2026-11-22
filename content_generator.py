@@ -7,6 +7,7 @@ from ai_provider import AIProviderError, generate_structured_text
 from ai_engine import CONFIG
 from grounding_engine import GroundingContext, build_grounding_context
 from safe_fallback import SafeFallbackError, build_safe_fallback_campaign
+from validators.terminology_validator import correct_global_terminology
 
 from repair_engine import (
     MAX_REPAIR_ATTEMPTS,
@@ -884,6 +885,8 @@ def _normalize_generated_text(
     if not text:
         return text
 
+    text = correct_global_terminology(text)
+
 
     result = normalize_terminology(
         text=text,
@@ -1421,6 +1424,7 @@ def generate_marketing_content(
         "successful": False,
         "reason": None,
     }
+    generation_source = "AI"
 
     try:
         grounding = build_grounding_context(brand_key)
@@ -1601,6 +1605,7 @@ def generate_marketing_content(
                 ) from fallback_error
 
             fallback_metadata["successful"] = True
+            generation_source = "deterministic fallback"
             repair_metadata = create_repair_metadata(
                 attempted=True,
                 successful=False,
@@ -1609,6 +1614,7 @@ def generate_marketing_content(
 
 
         if not fallback_metadata["attempted"]:
+            generation_source = "AI repair"
             repair_metadata = (
                 create_repair_metadata(
                     attempted=True,
@@ -1691,6 +1697,8 @@ def generate_marketing_content(
     result[
         "fallback"
     ] = fallback_metadata
+
+    result["generation_source"] = generation_source
 
 
     return result

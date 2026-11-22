@@ -295,7 +295,12 @@ class AIProviderTests(unittest.TestCase):
         ), patch("ai_provider._ollama_chat") as ollama_call:
             status = check_ai_provider_health("http://127.0.0.1:11434")
         self.assertEqual(status, "Healthy")
-        client.models.retrieve.assert_called_once_with("qwen/qwen3.8-27b")
+        client.chat.completions.create.assert_called_once()
+        self.assertEqual(
+            client.chat.completions.create.call_args.kwargs["model"],
+            "qwen/qwen3.8-27b",
+        )
+        client.models.retrieve.assert_not_called()
         ollama_call.assert_not_called()
 
 

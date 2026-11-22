@@ -475,8 +475,8 @@ PLATFORM_BEHAVIOR_RULES = {
 
 
 AUDIENCE_PATTERNS = {
-    "farmers": r"\bfarmers?\b",
-    "producers": r"\bproducers?\b",
+    "farmers": r"\bfarmers?\b|المزارعين|المزارعون|المزارع",
+    "producers": r"\bproducers?\b|المنتجين|المنتجون|المنتج",
     "agricultural_businesses": r"\bagricultural businesses\b",
     "rural_communities": r"\brural communit(?:y|ies)\b",
     "rural_residents": r"\brural residents?\b",
@@ -485,13 +485,12 @@ AUDIENCE_PATTERNS = {
     "general_public": r"\b(?:the\s+)?general public\b",
     "businesses_generally": r"(?<!agricultural )\bbusinesses\b",
     "families": r"\bfamil(?:y|ies)\b",
-    "students": r"\bstudents?\b",
+    "university_students": r"\buniversity students?\b|طلاب الجامعات",
+    "students": r"(?<!university )\bstudents?\b|الطلاب",
     "entrepreneurs": r"\bentrepreneurs?\b",
     "small_businesses": r"\bsmall businesses\b|\bSMEs?\b",
     "municipalities": r"\bmunicipalit(?:y|ies)\b",
     "public_employees": r"\bpublic employees?\b",
-    "arabic_farmers": r"المزارع(?:ون|ين)?",
-    "arabic_producers": r"المنتج(?:ون|ين)?",
     "arabic_rural_communities": r"المجتمعات الريفية",
     "arabic_citizens": r"المواطن(?:ون|ين)?",
 }
