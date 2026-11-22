@@ -64,3 +64,34 @@ class ProviderRateLimitFallbackTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class RepairRateLimitFallbackTests(unittest.TestCase):
+    @patch("content_generator._generate_repaired_content")
+    @patch("content_generator._generate_initial_content")
+    def test_matchmaking_repair_429_uses_validated_template(self, initial, repair):
+        from ai_engine import generate_campaign_strategy
+        from content_generator import MarketingContent
+        brief = (
+            "Create an Instagram carousel encouraging university students "
+            "to explore public-sector internship opportunities through Matchmaking."
+        )
+        strategy = generate_campaign_strategy(
+            brief, "Auto Detect", "Auto Detect", "Instagram", ["Arabic", "English"]
+        )
+        # Model returned structurally valid but factually invalid draft.
+        from safe_fallback import build_safe_fallback_campaign
+        payload = build_safe_fallback_campaign(brief, strategy, {})
+        payload["content_structure"][1]["body"] = (
+            "Students can access public-sector internships anywhere, anytime through Matchmaking."
+        )
+        initial.return_value = MarketingContent.model_validate(payload)
+        repair.side_effect = AIRateLimitError("provider 429")
+        result = generate_marketing_content(brief, strategy)
+        repair.assert_called_once()
+        self.assertEqual(result["generation_source"], "deterministic fallback")
+        self.assertEqual(result["fallback"]["reason"], "provider_rate_limit")
+        self.assertTrue(result["fallback"]["successful"])
+        self.assertTrue(result["repair"]["repair_attempted"])
+        self.assertFalse(result["repair"]["repair_successful"])
+        for key in ("security_validation", "terminology_validation", "factual_validation", "language_validation"):
+            self.assertEqual(result[key]["status"], "PASS", key)

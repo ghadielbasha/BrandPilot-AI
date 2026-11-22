@@ -1612,18 +1612,37 @@ def generate_marketing_content(
         )
 
 
-        repaired_content = (
-            _generate_repaired_content(
+        try:
+            repaired_content = _generate_repaired_content(
                 brief=brief,
                 strategy=strategy,
                 failed_content=failed_content,
-                validation_error=str(
-                    initial_error
-                ),
+                validation_error=str(initial_error),
                 validation_context=initial_error.details,
                 grounding=grounding,
             )
-        )
+        except AIRateLimitError:
+            # Avoid another model request when Groq rejects the repair.
+            try:
+                repaired_content = _generate_safe_fallback_content(
+                    brief=brief, strategy=strategy, grounding=grounding
+                )
+            except (SafeFallbackError, ValueError, TypeError):
+                raise RuntimeError(
+                    "Groq rate limit reached during repair and no safe fallback "
+                    "is available for this campaign."
+                ) from None
+            fallback_metadata = {
+                "attempted": True,
+                "successful": False,
+                "reason": "provider_rate_limit",
+            }
+            generation_source = "deterministic fallback"
+            repair_metadata = create_repair_metadata(
+                attempted=True,
+                successful=False,
+                initial_error=str(initial_error),
+            )
 
 
         # --------------------------------------------------
@@ -1647,6 +1666,10 @@ def generate_marketing_content(
 
 
         except ContentValidationError as repair_error:
+            if fallback_metadata["reason"] == "provider_rate_limit":
+                raise RuntimeError(
+                    "Rate-limit fallback failed output validation."
+                ) from None
             if not _is_high_confidence_factual_failure(repair_error):
                 raise RuntimeError(
                     "BrandPilot blocked the campaign after "
@@ -1703,6 +1726,9 @@ def generate_marketing_content(
                 initial_error=str(initial_error),
             )
 
+
+        if fallback_metadata["reason"] == "provider_rate_limit":
+            fallback_metadata["successful"] = True
 
         if not fallback_metadata["attempted"]:
             generation_source = "AI repair"

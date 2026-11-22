@@ -262,6 +262,12 @@ def generate_structured_text(
             raise
         except Exception as error:
             _log_groq_failure(error, model=settings.model, api_key=api_key)
+            LOGGER.error(
+                "Groq generation stage=%s configured_output_cap=%s",
+                "repair" if is_repair else "initial",
+                get_groq_repair_max_output_tokens()
+                if is_repair else get_groq_max_output_tokens(),
+            )
             if getattr(error, "status_code", None) == 429:
                 raise AIRateLimitError(
                     f"Groq request failed for configured model {settings.model}."
