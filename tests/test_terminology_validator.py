@@ -5,6 +5,8 @@ from validators.terminology_validator import (
     enforce_terminology,
     validate_terminology,
     normalize_terminology,
+    correct_global_terminology,
+    normalize_global_terminology,
 )
 
 
@@ -107,6 +109,14 @@ class TerminologyValidatorTests(unittest.TestCase):
                     validate_terminology(normalized["text"], "omsar")["status"],
                     "PASS",
                 )
+
+    def test_legacy_global_normalizer_delegates_to_canonical_function(self):
+        incorrect = "Matcha" + "matching"
+        self.assertEqual(
+            correct_global_terminology(incorrect),
+            normalize_global_terminology(incorrect),
+        )
+        self.assertEqual(normalize_global_terminology(incorrect), "Matchmaking")
 
 
 if __name__ == "__main__":

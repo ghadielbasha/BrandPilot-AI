@@ -21,7 +21,7 @@ CANONICAL_GLOBAL_TERMS = {
 }
 
 
-def correct_global_terminology(text: str) -> str:
+def normalize_global_terminology(text: str) -> str:
     """Normalize safety-critical campaign terms independently of brand."""
     normalized = text
     for preferred, variants in CANONICAL_GLOBAL_TERMS.items():
@@ -30,6 +30,11 @@ def correct_global_terminology(text: str) -> str:
                 re.escape(variant), preferred, normalized, flags=re.IGNORECASE
             )
     return normalized
+
+
+def correct_global_terminology(text: str) -> str:
+    """Backward-compatible alias for the canonical global normalizer."""
+    return normalize_global_terminology(text)
 
 
 def enforce_global_terminology_object(content: Any) -> None:

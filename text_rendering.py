@@ -5,7 +5,7 @@ from __future__ import annotations
 import html
 import re
 
-from validators.terminology_validator import correct_global_terminology
+from validators.terminology_validator import normalize_global_terminology
 
 
 ARABIC_FONT_STACK = '"Noto Sans Arabic", "Tajawal", "Arial", sans-serif'
@@ -18,7 +18,7 @@ _LTR_TOKEN = re.compile(
 
 def correct_known_spelling(text: str) -> str:
     """Correct known display spelling errors without changing other wording."""
-    return correct_global_terminology(text)
+    return normalize_global_terminology(text)
 
 
 def contains_arabic(text: str) -> bool:

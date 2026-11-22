@@ -7,7 +7,7 @@ from ai_provider import AIProviderError, generate_structured_text
 from ai_engine import CONFIG
 from grounding_engine import GroundingContext, build_grounding_context
 from safe_fallback import SafeFallbackError, build_safe_fallback_campaign
-from validators.terminology_validator import correct_global_terminology
+from validators.terminology_validator import normalize_global_terminology
 
 from repair_engine import (
     MAX_REPAIR_ATTEMPTS,
@@ -885,7 +885,7 @@ def _normalize_generated_text(
     if not text:
         return text
 
-    text = correct_global_terminology(text)
+    text = normalize_global_terminology(text)
 
 
     result = normalize_terminology(
