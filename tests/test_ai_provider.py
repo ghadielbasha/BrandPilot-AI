@@ -1,6 +1,7 @@
 import json
 import os
 import unittest
+import httpx
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -163,7 +164,7 @@ class AIProviderTests(unittest.TestCase):
             os.environ,
             {"AI_PROVIDER": "groq", "GROQ_API_KEY": secret},
             clear=True,
-        ):
+        ), self.assertLogs("brandpilot.ai_provider", level="ERROR") as logs:
             with self.assertRaises(AIProviderError) as context:
                 generate_structured_text(
                     system_prompt="system",
@@ -171,6 +172,57 @@ class AIProviderTests(unittest.TestCase):
                     schema=MarketingContent.model_json_schema(),
                 )
         self.assertNotIn(secret, str(context.exception))
+        self.assertNotIn(secret, "\n".join(logs.output))
+        self.assertEqual(
+            str(context.exception),
+            "Groq request failed for configured model qwen/qwen3.8-27b.",
+        )
+
+    @patch("ai_provider._create_groq_client")
+    def test_groq_status_code_type_and_code_are_logged_safely(self, create_client):
+        from groq import RateLimitError
+
+        secret = "gsk_never_log_this_key"
+        request = httpx.Request("POST", "https://api.groq.com/openai/v1/chat/completions")
+        response = httpx.Response(429, request=request)
+        provider_error = RateLimitError(
+            f"Rate limit response included {secret}",
+            response=response,
+            body={
+                "error": {
+                    "code": "rate_limit_exceeded",
+                    "type": "rate_limit_error",
+                    "message": f"Quota exceeded for token Bearer {secret}",
+                }
+            },
+        )
+        client = MagicMock()
+        client.chat.completions.create.side_effect = provider_error
+        create_client.return_value = client
+
+        with patch.dict(
+            os.environ,
+            {"AI_PROVIDER": "groq", "GROQ_API_KEY": secret},
+            clear=True,
+        ), self.assertLogs("brandpilot.ai_provider", level="ERROR") as logs:
+            with self.assertRaises(AIProviderError) as context:
+                generate_structured_text(
+                    system_prompt="system",
+                    user_prompt="user",
+                    schema=MarketingContent.model_json_schema(),
+                )
+
+        logged = "\n".join(logs.output)
+        self.assertIn("type=RateLimitError", logged)
+        self.assertIn("status=429", logged)
+        self.assertIn("code=rate_limit_exceeded", logged)
+        self.assertIn("model=qwen/qwen3.8-27b", logged)
+        self.assertIn("message=", logged)
+        self.assertNotIn(secret, logged)
+        self.assertEqual(
+            str(context.exception),
+            "Groq request failed for configured model qwen/qwen3.8-27b.",
+        )
 
     def test_unknown_provider_is_rejected(self):
         with patch.dict(os.environ, {"AI_PROVIDER": "unknown"}, clear=True):

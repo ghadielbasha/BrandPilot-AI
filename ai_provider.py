@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import logging
 import os
+import re
 from dataclasses import dataclass
 from typing import Any, Mapping
 
@@ -15,6 +17,15 @@ DEFAULT_MODELS = {
     OLLAMA_PROVIDER: "qwen3:4b",
     GROQ_PROVIDER: "qwen/qwen3.8-27b",
 }
+
+LOGGER = logging.getLogger("brandpilot.ai_provider")
+_MAX_DIAGNOSTIC_MESSAGE_LENGTH = 500
+_SENSITIVE_ASSIGNMENT = re.compile(
+    r"(?i)\b(api[_-]?key|authorization|password|secret|token)\b"
+    r"\s*[:=]\s*(?:bearer\s+)?(?:['\"])?[^\s,;}\]\"']+"
+)
+_BEARER_TOKEN = re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]+")
+_GROQ_KEY = re.compile(r"\bgsk_[A-Za-z0-9_-]+\b", re.IGNORECASE)
 
 
 class AIProviderError(RuntimeError):
@@ -88,6 +99,62 @@ def _groq_api_key(environment: Mapping[str, str] | None = None) -> str:
     return api_key
 
 
+def _sanitize_groq_diagnostic(value: object, api_key: str) -> str:
+    """Return a bounded single-line diagnostic with credential-shaped data removed."""
+    text = str(value or "Unavailable")
+    if api_key:
+        text = text.replace(api_key, "[REDACTED]")
+    text = _GROQ_KEY.sub("[REDACTED]", text)
+    text = _BEARER_TOKEN.sub("Bearer [REDACTED]", text)
+    text = _SENSITIVE_ASSIGNMENT.sub(
+        lambda match: f"{match.group(1)}=[REDACTED]",
+        text,
+    )
+    text = " ".join(text.split())
+    return text[:_MAX_DIAGNOSTIC_MESSAGE_LENGTH]
+
+
+def _groq_error_details(error: Exception) -> tuple[object, object, object]:
+    """Extract status, provider code, and message without headers or requests."""
+    status: object = "n/a"
+    code: object = "n/a"
+    message: object = str(error)
+
+    try:
+        from groq import APIConnectionError, APIStatusError
+
+        if isinstance(error, APIStatusError):
+            status = getattr(error, "status_code", None) or getattr(
+                getattr(error, "response", None), "status_code", "n/a"
+            )
+        elif isinstance(error, APIConnectionError):
+            status = "connection_error"
+    except ImportError:
+        pass
+
+    body = getattr(error, "body", None)
+    if isinstance(body, Mapping):
+        provider_error = body.get("error", body)
+        if isinstance(provider_error, Mapping):
+            code = provider_error.get("code") or provider_error.get("type") or code
+            message = provider_error.get("message") or message
+
+    return status, code, message
+
+
+def _log_groq_failure(error: Exception, *, model: str, api_key: str) -> None:
+    """Log safe provider diagnostics without exception tracebacks or credentials."""
+    status, code, message = _groq_error_details(error)
+    LOGGER.error(
+        'Groq request failed: type=%s status=%s code=%s model=%s message="%s"',
+        _sanitize_groq_diagnostic(type(error).__name__, api_key),
+        _sanitize_groq_diagnostic(status, api_key),
+        _sanitize_groq_diagnostic(code, api_key),
+        _sanitize_groq_diagnostic(model, api_key),
+        _sanitize_groq_diagnostic(message, api_key),
+    )
+
+
 def generate_structured_text(
     *,
     system_prompt: str,
@@ -139,7 +206,8 @@ def generate_structured_text(
             content = response.choices[0].message.content
         except AIProviderError:
             raise
-        except Exception:
+        except Exception as error:
+            _log_groq_failure(error, model=settings.model, api_key=api_key)
             raise AIProviderError(
                 f"Groq request failed for configured model {settings.model}."
             ) from None
