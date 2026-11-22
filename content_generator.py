@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, PrivateAttr
 
-from ai_provider import AIProviderError, AIRateLimitError, generate_structured_text
+from ai_provider import AIProviderError, AIRateLimitError, AIOutputTruncatedError, generate_structured_text
 from ai_engine import CONFIG
 from grounding_engine import GroundingContext, build_grounding_context
 from prompt_compaction import compact_strategy_for_prompt
@@ -805,7 +805,7 @@ def _call_structured_model(
             is_repair=is_repair,
         )
 
-    except AIRateLimitError:
+    except (AIRateLimitError, AIOutputTruncatedError):
         raise
 
     except AIProviderError as error:
@@ -1538,18 +1538,23 @@ def generate_marketing_content(
             strategy=strategy,
             grounding=grounding,
         )
-    except AIRateLimitError:
-        # A quota failure is not a validation failure. Try only a supported,
-        # model-free template, then run every validator as usual.
+    except (AIRateLimitError, AIOutputTruncatedError) as provider_error:
+        # A provider limit or truncated JSON is not validated campaign content.
+        # Use only approved templates and run ALL validators as usual.
         try:
             content = _generate_safe_fallback_content(
                 brief=brief, strategy=strategy, grounding=grounding
             )
         except (SafeFallbackError, ValueError, TypeError) as error:
             raise RuntimeError(
-                "Groq usage limit reached and no safe, supported fallback is available."
+                "Groq could not complete structured generation and no safe, "
+                "supported fallback is available."
             ) from None
-        content._provider_fallback_reason = "provider_rate_limit"
+        content._provider_fallback_reason = (
+            "provider_output_truncated"
+            if isinstance(provider_error, AIOutputTruncatedError)
+            else "provider_rate_limit"
+        )
 
 
     if content._provider_fallback_reason:
@@ -1621,21 +1626,25 @@ def generate_marketing_content(
                 validation_context=initial_error.details,
                 grounding=grounding,
             )
-        except AIRateLimitError:
-            # Avoid another model request when Groq rejects the repair.
+        except (AIRateLimitError, AIOutputTruncatedError) as provider_error:
+            # Avoid another model request when Groq rejects or truncates repair.
             try:
                 repaired_content = _generate_safe_fallback_content(
                     brief=brief, strategy=strategy, grounding=grounding
                 )
             except (SafeFallbackError, ValueError, TypeError):
                 raise RuntimeError(
-                    "Groq rate limit reached during repair and no safe fallback "
+                    "Groq could not complete repair and no safe fallback "
                     "is available for this campaign."
                 ) from None
             fallback_metadata = {
                 "attempted": True,
                 "successful": False,
-                "reason": "provider_rate_limit",
+                "reason": (
+                    "provider_output_truncated"
+                    if isinstance(provider_error, AIOutputTruncatedError)
+                    else "provider_rate_limit"
+                ),
             }
             generation_source = "deterministic fallback"
             repair_metadata = create_repair_metadata(
@@ -1666,9 +1675,11 @@ def generate_marketing_content(
 
 
         except ContentValidationError as repair_error:
-            if fallback_metadata["reason"] == "provider_rate_limit":
+            if fallback_metadata["reason"] in {
+                "provider_rate_limit", "provider_output_truncated"
+            }:
                 raise RuntimeError(
-                    "Rate-limit fallback failed output validation."
+                    "Provider fallback failed output validation."
                 ) from None
             if not _is_high_confidence_factual_failure(repair_error):
                 raise RuntimeError(
@@ -1727,7 +1738,9 @@ def generate_marketing_content(
             )
 
 
-        if fallback_metadata["reason"] == "provider_rate_limit":
+        if fallback_metadata["reason"] in {
+            "provider_rate_limit", "provider_output_truncated"
+        }:
             fallback_metadata["successful"] = True
 
         if not fallback_metadata["attempted"]:

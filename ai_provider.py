@@ -39,6 +39,10 @@ class AIRateLimitError(AIProviderError):
     """Groq request was rejected due to a rate or token quota limit."""
 
 
+class AIOutputTruncatedError(AIProviderError):
+    """Groq strict JSON output exceeded the configured completion budget."""
+
+
 class AIProviderConfigurationError(AIProviderError):
     """Raised for invalid provider configuration."""
 
@@ -268,6 +272,15 @@ def generate_structured_text(
                 get_groq_repair_max_output_tokens()
                 if is_repair else get_groq_max_output_tokens(),
             )
+            status, code, message = _groq_error_details(error)
+            if (
+                status == 400
+                and code == "json_validate_failed"
+                and "max completion tokens reached" in str(message).lower()
+            ):
+                raise AIOutputTruncatedError(
+                    "Groq strict JSON generation exceeded its output token budget."
+                ) from None
             if getattr(error, "status_code", None) == 429:
                 raise AIRateLimitError(
                     f"Groq request failed for configured model {settings.model}."

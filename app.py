@@ -30,10 +30,16 @@ def safe_error(message: str, error: Exception | None = None) -> None:
             "factual_validation": "Factual grounding validation blocked the content.",
             "language_validation": "Language validation blocked the content.",
         }
+        safe_message = str(error)
         reason = next(
-            (label for key, label in stages.items() if key in str(error)),
-            "The request failed in a protected internal processing stage.",
+            (label for key, label in stages.items() if key in safe_message),
+            "The AI provider or validation pipeline could not complete this request.",
         )
+        if "no safe, supported fallback" in safe_message or "no safe fallback" in safe_message:
+            reason = (
+                "The model could not complete generation, and no validated "
+                "fallback was available for this brief."
+            )
         with st.expander("Safe diagnostic details"):
             st.write(reason)
 
@@ -140,7 +146,7 @@ def create_campaign(actor: dict) -> None:
                 })
         except Exception as error:
             repository.audit(actor["id"], "content_generation_blocked", "campaign_draft")
-            safe_error("BrandPilot could not produce a compliant campaign after one automatic correction attempt.", error)
+            safe_error("BrandPilot could not complete content generation. No draft was saved.", error)
     content = st.session_state.get("draft_content")
     if content:
         render_content(content)
