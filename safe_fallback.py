@@ -122,70 +122,90 @@ def _matchmaking_internship_fallback(
     strategy: dict[str, Any],
     languages: set[str],
 ) -> dict[str, Any] | None:
-    """Return the tested OMSAR opportunity template only for the exact fact set."""
-    required = (
-        r"\bMatchmaking\b",
-        r"\bpublic-sector\b",
-        r"\binternship opportunities\b",
-        r"\buniversity students\b",
-    )
-    if not all(re.search(pattern, brief, re.IGNORECASE) for pattern in required):
+    """Build a conservative Matchmaking awareness draft from explicit brief facts.
+
+    Do not infer an opportunity type, eligibility, open roles, deadlines,
+    application capabilities, or a public-sector placement from silence.
+    """
+    if not re.search(r"(?<!\w)match[\s-]*making(?!\w)", brief, re.IGNORECASE):
         return None
     if str(strategy.get("brand_key", "")).casefold() != "omsar":
         return None
-    if _target_audience(strategy) != ["University students"]:
+    audience = _target_audience(strategy)
+    if len(audience) != 1 or audience[0].casefold() != "university students":
         raise SafeFallbackError(
-            "The deterministic opportunity template requires the explicit audience."
+            "The Matchmaking awareness template requires the approved "
+            "University students audience."
         )
 
+    # Match only opportunity categories stated in the supplied campaign brief.
+    # Keep a topic-neutral option for a brief that merely introduces Matchmaking.
+    if re.search(r"\bintern(?:ship)?s?\b|\btraineeships?\b", brief, re.I):
+        topic_en, topic_ar, tag = "internship opportunities", "فرص التدريب", "#Internships"
+    elif re.search(r"\btraining(?:\s+opportunities)?\b", brief, re.I):
+        topic_en, topic_ar, tag = "training opportunities", "فرص التدريب", "#Training"
+    elif re.search(r"\bjobs?\b|\bemployment\b|\bvacanc(?:y|ies)\b", brief, re.I):
+        topic_en, topic_ar, tag = "job opportunities", "فرص العمل", "#Jobs"
+    elif re.search(r"\bopportunities\b", brief, re.I):
+        topic_en, topic_ar, tag = "opportunities", "الفرص", "#Opportunities"
+    else:
+        topic_en, topic_ar, tag = None, None, None
+
+    public_sector = bool(re.search(
+        r"\bpublic[\s\u2010-\u2015-]*sector\b|\bgovernment(?:al)?\b|"
+        r"القطاع العام|القطاع الحكومي",
+        brief,
+        re.IGNORECASE,
+    ))
+    subject_en = (
+        ("public-sector " if public_sector else "") + topic_en
+        if topic_en else "Matchmaking"
+    )
+    subject_ar = (
+        (topic_ar + " في القطاع العام" if public_sector else topic_ar)
+        if topic_ar else "Matchmaking"
+    )
     caption_en = (
-        "University students can explore public-sector internship opportunities "
-        "through Matchmaking."
-        if "English" in languages else ""
+        f"University students can explore {subject_en} through Matchmaking."
+        if topic_en else
+        "University students can learn more about Matchmaking."
     )
     caption_ar = (
-        "يمكن لطلاب الجامعات استكشاف فرص التدريب في القطاع العام عبر Matchmaking."
-        if "Arabic" in languages else ""
+        f"يمكن لطلاب الجامعات استكشاف {subject_ar} عبر Matchmaking."
+        if topic_ar else
+        "يمكن لطلاب الجامعات التعرّف أكثر على Matchmaking."
+    )
+    content_en = (
+        f"Explore {subject_en} through Matchmaking."
+        if topic_en else "Learn more about Matchmaking."
     )
     return {
-        "caption_ar": caption_ar,
-        "caption_en": caption_en,
+        "caption_ar": caption_ar if "Arabic" in languages else "",
+        "caption_en": caption_en if "English" in languages else "",
         "content_structure": [
-            {
-                "number": 1,
-                "type": "Slide",
-                "headline": "Public-sector internship opportunities",
-                "body": "For university students.",
-            },
-            {
-                "number": 2,
-                "type": "Slide",
-                "headline": "Explore through Matchmaking",
-                "body": (
-                    "University students can explore public-sector internship "
-                    "opportunities through Matchmaking."
-                ),
-            },
-            {
-                "number": 3,
-                "type": "Slide",
-                "headline": "Learn more",
-                "body": "Explore public-sector internship opportunities through Matchmaking.",
-            },
+            {"number": 1, "type": "Slide",
+             "headline": subject_en[0].upper() + subject_en[1:],
+             "body": "For university students."},
+            {"number": 2, "type": "Slide",
+             "headline": "Explore Matchmaking",
+             "body": caption_en},
+            {"number": 3, "type": "Slide",
+             "headline": "Learn more",
+             "body": content_en},
         ],
         "visual_concept": (
-            "A professional public-sector internship opportunity carousel for "
-            "university students, with Matchmaking shown as the named initiative."
+            "A professional institutional awareness carousel for university "
+            "students, with Matchmaking shown as the named initiative."
         ),
         "visual_generation_prompt": (
-            "Create a professional carousel about public-sector internship "
-            "opportunities for university students through Matchmaking."
+            "Create a professional carousel for university students "
+            "featuring Matchmaking. Use generic abstract imagery and "
+            "no URLs."
         ),
-        "cta": "Explore public-sector internship opportunities through Matchmaking",
-        "hashtags": ["#Matchmaking", "#PublicSectorInternships"],
+        "cta": content_en.rstrip("."),
+        "hashtags": ["#Matchmaking"] + ([tag] if tag else []),
         "brand_check": {"status": "PASS", "issues": [], "recommendations": []},
     }
-
 
 def build_safe_fallback_campaign(
     brief: str,
