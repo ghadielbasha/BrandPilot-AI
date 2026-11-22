@@ -8,9 +8,15 @@ from unittest.mock import MagicMock, patch
 from ai_provider import (
     AIProviderConfigurationError,
     AIProviderError,
+    DEFAULT_GROQ_MAX_OUTPUT_TOKENS,
+    DEFAULT_GROQ_REPAIR_MAX_OUTPUT_TOKENS,
     DEFAULT_MODELS,
+    _create_groq_client,
     check_ai_provider_health,
     generate_structured_text,
+    get_groq_max_output_tokens,
+    get_groq_output_token_limits,
+    get_groq_repair_max_output_tokens,
     get_ai_provider_settings,
 )
 from content_generator import (
@@ -87,6 +93,41 @@ class AIProviderTests(unittest.TestCase):
         self.assertEqual(settings.provider, "ollama")
         self.assertEqual(settings.model, "qwen3:4b")
 
+    def test_groq_output_caps_default_to_500_and_400(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(get_groq_max_output_tokens(), 500)
+            self.assertEqual(get_groq_repair_max_output_tokens(), 400)
+            self.assertEqual(DEFAULT_GROQ_MAX_OUTPUT_TOKENS, 500)
+            self.assertEqual(DEFAULT_GROQ_REPAIR_MAX_OUTPUT_TOKENS, 400)
+            self.assertLess(sum(get_groq_output_token_limits()), 1000)
+
+    def test_groq_output_cap_environment_override(self):
+        with patch.dict(
+            os.environ,
+            {
+                "GROQ_MAX_OUTPUT_TOKENS": "540",
+                "GROQ_REPAIR_MAX_OUTPUT_TOKENS": "350",
+            },
+            clear=True,
+        ):
+            self.assertEqual(get_groq_output_token_limits(), (540, 350))
+
+    def test_groq_output_cap_override_cannot_reach_otpm_limit(self):
+        with patch.dict(
+            os.environ,
+            {
+                "GROQ_MAX_OUTPUT_TOKENS": "600",
+                "GROQ_REPAIR_MAX_OUTPUT_TOKENS": "400",
+            },
+            clear=True,
+        ), self.assertRaises(AIProviderConfigurationError):
+            get_groq_output_token_limits()
+
+    @patch("groq.Groq")
+    def test_groq_sdk_retries_are_disabled(self, groq_class):
+        _create_groq_client("test-key")
+        groq_class.assert_called_once_with(api_key="test-key", max_retries=0)
+
     @patch("ai_provider._ollama_chat")
     def test_ollama_provider_uses_mocked_ollama_call(self, ollama_chat):
         ollama_chat.return_value = SimpleNamespace(
@@ -105,6 +146,7 @@ class AIProviderTests(unittest.TestCase):
         self.assertEqual(raw, self.raw_payload)
         self.assertEqual(ollama_chat.call_args.kwargs["model"], "qwen3:4b")
         self.assertFalse(ollama_chat.call_args.kwargs["think"])
+        self.assertNotIn("max_completion_tokens", ollama_chat.call_args.kwargs)
 
     @patch("ai_provider._create_groq_client")
     def test_groq_provider_uses_strict_structured_output(self, create_client):
@@ -129,12 +171,36 @@ class AIProviderTests(unittest.TestCase):
         self.assertEqual(kwargs["model"], "qwen/qwen3.8-27b")
         self.assertEqual(kwargs["reasoning_effort"], "none")
         self.assertEqual(kwargs["reasoning_format"], "hidden")
+        self.assertEqual(kwargs["max_completion_tokens"], 500)
         response_format = kwargs["response_format"]
         self.assertEqual(response_format["type"], "json_schema")
         self.assertTrue(response_format["json_schema"]["strict"])
         schema = response_format["json_schema"]["schema"]
         self.assertFalse(schema["additionalProperties"])
         self.assertFalse(schema["$defs"]["ContentItem"]["additionalProperties"])
+
+    @patch("ai_provider._create_groq_client")
+    def test_groq_repair_uses_400_output_tokens(self, create_client):
+        client = MagicMock()
+        client.chat.completions.create.return_value = SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=self.raw_payload))]
+        )
+        create_client.return_value = client
+        with patch.dict(
+            os.environ,
+            {"AI_PROVIDER": "groq", "GROQ_API_KEY": "test-key"},
+            clear=True,
+        ):
+            generate_structured_text(
+                system_prompt="system",
+                user_prompt="repair",
+                schema=MarketingContent.model_json_schema(),
+                is_repair=True,
+            )
+        self.assertEqual(
+            client.chat.completions.create.call_args.kwargs["max_completion_tokens"],
+            400,
+        )
 
     def test_groq_default_model_id(self):
         with patch.dict(
@@ -223,6 +289,7 @@ class AIProviderTests(unittest.TestCase):
             str(context.exception),
             "Groq request failed for configured model qwen/qwen3.8-27b.",
         )
+        self.assertEqual(client.chat.completions.create.call_count, 1)
 
     def test_unknown_provider_is_rejected(self):
         with patch.dict(os.environ, {"AI_PROVIDER": "unknown"}, clear=True):
@@ -235,6 +302,7 @@ class AIProviderTests(unittest.TestCase):
         content = _generate_initial_content(self.brief, self.strategy)
         self.assertIsInstance(content, MarketingContent)
         provider_call.assert_called_once()
+        self.assertFalse(provider_call.call_args.kwargs["is_repair"])
 
     @patch("content_generator.generate_structured_text")
     def test_repair_generation_uses_provider_abstraction(self, provider_call):
@@ -248,6 +316,7 @@ class AIProviderTests(unittest.TestCase):
         )
         self.assertIsInstance(content, MarketingContent)
         provider_call.assert_called_once()
+        self.assertTrue(provider_call.call_args.kwargs["is_repair"])
 
     @patch("ai_provider._create_groq_client")
     def test_groq_output_parses_into_marketing_content(self, create_client):
@@ -299,6 +368,10 @@ class AIProviderTests(unittest.TestCase):
         self.assertEqual(
             client.chat.completions.create.call_args.kwargs["model"],
             "qwen/qwen3.8-27b",
+        )
+        self.assertEqual(
+            client.chat.completions.create.call_args.kwargs["max_completion_tokens"],
+            4,
         )
         client.models.retrieve.assert_not_called()
         ollama_call.assert_not_called()

@@ -1,6 +1,8 @@
 import json
 from typing import Any
 
+from prompt_compaction import compact_strategy_for_prompt, compact_validation_context
+
 
 # --------------------------------------------------
 # Configuration
@@ -66,15 +68,15 @@ def build_repair_prompt(
 
 
     strategy_json = json.dumps(
-        strategy,
+        compact_strategy_for_prompt(strategy),
         ensure_ascii=False,
-        indent=2,
+        separators=(",", ":"),
     )
 
     failed_content_json = json.dumps(
         failed_content,
         ensure_ascii=False,
-        indent=2,
+        separators=(",", ":"),
     )
 
     if validation_context is not None and not isinstance(validation_context, dict):
@@ -83,7 +85,7 @@ def build_repair_prompt(
         )
 
     validation_context_json = json.dumps(
-        validation_context or {},
+        compact_validation_context(validation_context),
         ensure_ascii=False,
         indent=2,
     )

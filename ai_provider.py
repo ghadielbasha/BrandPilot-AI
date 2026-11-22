@@ -17,6 +17,9 @@ DEFAULT_MODELS = {
     OLLAMA_PROVIDER: "qwen3:4b",
     GROQ_PROVIDER: "qwen/qwen3.8-27b",
 }
+DEFAULT_GROQ_MAX_OUTPUT_TOKENS = 500
+DEFAULT_GROQ_REPAIR_MAX_OUTPUT_TOKENS = 400
+_MAX_SAFE_GROQ_OUTPUT_TOKENS = 999
 
 LOGGER = logging.getLogger("brandpilot.ai_provider")
 _MAX_DIAGNOSTIC_MESSAGE_LENGTH = 500
@@ -59,6 +62,46 @@ def get_ai_provider_settings(
     )
 
 
+def get_groq_output_token_limits(
+    environment: Mapping[str, str] | None = None,
+) -> tuple[int, int]:
+    """Return safe initial/repair caps whose combined budget stays below 1000."""
+    env = environment if environment is not None else os.environ
+    values = []
+    for name, default in (
+        ("GROQ_MAX_OUTPUT_TOKENS", DEFAULT_GROQ_MAX_OUTPUT_TOKENS),
+        ("GROQ_REPAIR_MAX_OUTPUT_TOKENS", DEFAULT_GROQ_REPAIR_MAX_OUTPUT_TOKENS),
+    ):
+        raw_value = env.get(name, str(default)).strip()
+        try:
+            value = int(raw_value)
+        except ValueError as error:
+            raise AIProviderConfigurationError(f"{name} must be an integer.") from error
+        if value < 1 or value > _MAX_SAFE_GROQ_OUTPUT_TOKENS:
+            raise AIProviderConfigurationError(
+                f"{name} must be between 1 and 999."
+            )
+        values.append(value)
+    initial, repair = values
+    if initial + repair >= 1000:
+        raise AIProviderConfigurationError(
+            "Combined Groq initial and repair output limits must be below 1000."
+        )
+    return initial, repair
+
+
+def get_groq_max_output_tokens(
+    environment: Mapping[str, str] | None = None,
+) -> int:
+    return get_groq_output_token_limits(environment)[0]
+
+
+def get_groq_repair_max_output_tokens(
+    environment: Mapping[str, str] | None = None,
+) -> int:
+    return get_groq_output_token_limits(environment)[1]
+
+
 def _strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
     """Close every object for Groq strict structured-output mode."""
     strict_schema = copy.deepcopy(schema)
@@ -86,7 +129,9 @@ def _ollama_chat(**kwargs):
 def _create_groq_client(api_key: str):
     from groq import Groq
 
-    return Groq(api_key=api_key)
+    # Groq's SDK retries selected status codes by default. BrandPilot must not
+    # amplify a 429 by immediately repeating the same token-heavy request.
+    return Groq(api_key=api_key, max_retries=0)
 
 
 def _groq_api_key(environment: Mapping[str, str] | None = None) -> str:
@@ -160,6 +205,7 @@ def generate_structured_text(
     system_prompt: str,
     user_prompt: str,
     schema: dict[str, Any],
+    is_repair: bool = False,
 ) -> str:
     """Generate one schema-shaped JSON string with the configured provider."""
     settings = get_ai_provider_settings()
@@ -194,6 +240,10 @@ def generate_structured_text(
                 temperature=0,
                 reasoning_effort="none",
                 reasoning_format="hidden",
+                max_completion_tokens=(
+                    get_groq_repair_max_output_tokens()
+                    if is_repair else get_groq_max_output_tokens()
+                ),
                 response_format={
                     "type": "json_schema",
                     "json_schema": {
@@ -246,10 +296,13 @@ def check_ai_provider_health(ollama_host: str) -> str:
             temperature=0,
             reasoning_effort="none",
             reasoning_format="hidden",
-            max_completion_tokens=4,
+            max_completion_tokens=min(4, get_groq_max_output_tokens()),
         )
         return "Healthy"
-    except AIProviderConfigurationError:
-        return "Unhealthy: GROQ_API_KEY is not configured"
-    except Exception:
+    except AIProviderConfigurationError as error:
+        if "GROQ_API_KEY" in str(error):
+            return "Unhealthy: GROQ_API_KEY is not configured"
+        return "Unhealthy: Groq configuration is invalid"
+    except Exception as error:
+        _log_groq_failure(error, model=settings.model, api_key=api_key)
         return "Unreachable"

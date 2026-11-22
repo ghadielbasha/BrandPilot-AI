@@ -158,6 +158,21 @@ class RepairEngineTests(
         self.assertIn('"field": "content_structure[0].body"', prompt)
         self.assertIn('"generated_audience": "Citizens of Lebanon"', prompt)
 
+    def test_repair_prompt_omits_redundant_validation_results(self):
+        prompt = build_repair_prompt(
+            brief=self.brief,
+            strategy={**self.strategy, "grounding_provenance": {"duplicate": True}},
+            failed_content=self.failed_content,
+            validation_error=self.validation_error,
+            validation_context={
+                "validation_stage": "language_validation",
+                "issues": [{"type": "language", "field": "caption_ar"}],
+                "field_results": {"caption_en": {"status": "PASS"}},
+            },
+        )
+        self.assertNotIn("grounding_provenance", prompt)
+        self.assertNotIn("field_results", prompt)
+
     def test_subject_binding_repair_removes_platform_substitutions(self):
         strategy = dict(self.strategy)
         strategy["target_audience"] = [

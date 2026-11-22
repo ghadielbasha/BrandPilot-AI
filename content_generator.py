@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from ai_provider import AIProviderError, generate_structured_text
 from ai_engine import CONFIG
 from grounding_engine import GroundingContext, build_grounding_context
+from prompt_compaction import compact_strategy_for_prompt
 from safe_fallback import SafeFallbackError, build_safe_fallback_campaign
 from validators.terminology_validator import normalize_global_terminology
 
@@ -187,16 +188,21 @@ def build_content_prompt(
         "brands"
     ][brand_key]
 
+    brand_prompt_keys = (
+        "display_name", "personality", "language_strategy",
+        "content_structure_rules", "cta_style", "emoji_policy",
+        "hashtag_policy", "avoid",
+    )
     brand_rules = json.dumps(
-        brand_data,
+        {key: brand_data[key] for key in brand_prompt_keys if key in brand_data},
         ensure_ascii=False,
-        indent=2
+        separators=(",", ":"),
     )
 
     strategy_json = json.dumps(
-        strategy,
+        compact_strategy_for_prompt(strategy),
         ensure_ascii=False,
-        indent=2
+        separators=(",", ":"),
     )
 
     languages = strategy.get(
@@ -238,6 +244,58 @@ another audience.
 """
 
     grounding = grounding or build_grounding_context(brand_key)
+
+    return f"""
+APPROVED GOVERNED KNOWLEDGE
+===========================
+{grounding.prompt_context}
+
+KNOWLEDGE SCOPE AND PRIORITY
+============================
+GENERAL BRAND KNOWLEDGE IS CONTEXT ONLY.
+Campaign facts in the brief and approved strategy define the subject.
+Do not transform general Dawlati capabilities into service names.
+If the brief refers to unnamed services, keep them unnamed.
+
+CAMPAIGN BRIEF
+==============
+{brief}
+
+APPROVED CAMPAIGN STRATEGY
+==========================
+{strategy_json}
+{authoritative_audience_section}
+
+BRAND DELIVERY RULES
+====================
+{brand_rules}
+
+REQUESTED LANGUAGES
+===================
+{", ".join(languages)}
+
+Create the requested caption(s), content structure, visual concept, visual
+prompt, CTA, hashtags, and brand check. For a carousel, use 4-6 slides; for a
+reel, use scenes; otherwise describe the main post components.
+
+Use correct professional Arabic/English. Unrequested caption fields must be
+empty. Write DAWLATI as Ø¯ÙˆÙ„ØªÙŠ in Arabic. Describe services as available
+through Dawlati; never describe Dawlati itself as the services.
+
+Use only the brief, compact strategy, governed knowledge, and brand delivery
+rules. Preserve explicit numbers and entity relationships. Never invent or
+infer service names, missing list items, facts, benefits, eligibility, dates,
+URLs, statistics, partnerships, capabilities, platform behavior, audiences,
+credentials, secrets, personal data, or private infrastructure. "Available
+online" does not establish application, payment, tracking, 24/7, anytime,
+anywhere, convenience, speed, ease, or efficiency. These constraints apply to
+every caption, slide/scene, visual field, CTA, and hashtag.
+
+Visuals must remain generic where service-level evidence is absent; do not
+invent official colors, logos, fonts, service cards, links, or icons. Use a
+small number of factual hashtags. Brand check is PASS only if every rule is
+met. Human approval remains required. Return only the required JSON object.
+"""
 
     return f"""
 You are BrandPilot AI.
@@ -732,7 +790,9 @@ Do not add explanations outside JSON.
 
 def _call_structured_model(
     system_prompt: str,
-    user_prompt: str
+    user_prompt: str,
+    *,
+    is_repair: bool = False,
 ) -> MarketingContent:
 
     try:
@@ -741,6 +801,7 @@ def _call_structured_model(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             schema=MarketingContent.model_json_schema(),
+            is_repair=is_repair,
         )
 
     except AIProviderError as error:
@@ -868,7 +929,8 @@ def _generate_repaired_content(
 
     return _call_structured_model(
         system_prompt=system_prompt,
-        user_prompt=repair_prompt
+        user_prompt=repair_prompt,
+        is_repair=True,
     )
 
 

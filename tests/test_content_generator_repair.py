@@ -225,6 +225,9 @@ class ContentGeneratorRepairTests(
         self.assertIn("GENERAL BRAND KNOWLEDGE IS CONTEXT ONLY", prompt)
         self.assertIn("If the brief refers to unnamed services, keep them unnamed", prompt)
         self.assertIn("Do not transform general Dawlati capabilities into service names", prompt)
+        self.assertNotIn("grounding_provenance", prompt)
+        self.assertNotIn("strategy_validation", prompt)
+        self.assertLess(len(prompt), 12000)
 
     @patch(
         "content_generator._generate_initial_content"

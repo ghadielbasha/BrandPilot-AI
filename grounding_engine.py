@@ -32,12 +32,23 @@ class GroundingContext:
 
 def _compact_organization(record: dict[str, Any]) -> dict[str, Any]:
     keys = (
-        "official_names", "country", "summary", "mission", "vision",
-        "core_areas", "core_functions", "primary_audiences",
-        "institutional_principles", "communication_principles",
+        "official_names", "country", "summary", "core_areas", "core_functions",
+        "institutional_principles",
         "communication_guardrails", "service_claim_rules", "digitization_status",
     )
-    return {key: record[key] for key in keys if key in record}
+    compact = {key: record[key] for key in keys if key in record}
+    functions = compact.get("core_functions")
+    if isinstance(functions, list):
+        compact["core_functions"] = [
+            {
+                key: item[key]
+                for key in ("name_en", "name_ar", "scope", "description_en")
+                if key in item
+            }
+            if isinstance(item, dict) else item
+            for item in functions
+        ]
+    return compact
 
 
 def _compact_terminology(record: dict[str, Any]) -> dict[str, Any]:
@@ -45,7 +56,7 @@ def _compact_terminology(record: dict[str, Any]) -> dict[str, Any]:
     for term in record.get("terms", []):
         terms.append({
             key: term[key]
-            for key in ("concept", "preferred", "allowed_variants", "forbidden_variants")
+            for key in ("concept", "preferred", "forbidden_variants")
             if key in term
         })
     return {"terms": terms, "rules": record.get("rules", {})}
@@ -56,6 +67,11 @@ def _compact_services(record: dict[str, Any]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in record.items():
         if key in {"status", "classification", "brand", "brand_key", "record_type", "last_verified"}:
+            continue
+        if key in {"schema_version", "service_template"}:
+            continue
+        if key == "catalog_rules" and isinstance(value, dict):
+            result[key] = {"rules": value.get("rules", [])}
             continue
         if isinstance(value, list):
             result[key] = [item for item in value if not isinstance(item, dict) or item.get("status", "approved") == "approved"]
