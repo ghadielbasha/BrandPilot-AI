@@ -35,6 +35,10 @@ class AIProviderError(RuntimeError):
     """Safe provider error that never contains credentials."""
 
 
+class AIRateLimitError(AIProviderError):
+    """Groq request was rejected due to a rate or token quota limit."""
+
+
 class AIProviderConfigurationError(AIProviderError):
     """Raised for invalid provider configuration."""
 
@@ -258,6 +262,10 @@ def generate_structured_text(
             raise
         except Exception as error:
             _log_groq_failure(error, model=settings.model, api_key=api_key)
+            if getattr(error, "status_code", None) == 429:
+                raise AIRateLimitError(
+                    f"Groq request failed for configured model {settings.model}."
+                ) from None
             raise AIProviderError(
                 f"Groq request failed for configured model {settings.model}."
             ) from None

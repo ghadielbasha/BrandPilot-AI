@@ -1,9 +1,9 @@
 import json
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 
-from ai_provider import AIProviderError, generate_structured_text
+from ai_provider import AIProviderError, AIRateLimitError, generate_structured_text
 from ai_engine import CONFIG
 from grounding_engine import GroundingContext, build_grounding_context
 from prompt_compaction import compact_strategy_for_prompt
@@ -61,6 +61,7 @@ class BrandCheck(BaseModel):
 
 
 class MarketingContent(BaseModel):
+    _provider_fallback_reason: str | None = PrivateAttr(default=None)
     caption_ar: str
     caption_en: str
 
@@ -804,6 +805,9 @@ def _call_structured_model(
             is_repair=is_repair,
         )
 
+    except AIRateLimitError:
+        raise
+
     except AIProviderError as error:
 
         raise RuntimeError(
@@ -1528,12 +1532,32 @@ def generate_marketing_content(
     # Initial Generation
     # --------------------------------------------------
 
-    content = _generate_initial_content(
-        brief=brief,
-        strategy=strategy,
-        grounding=grounding,
-    )
+    try:
+        content = _generate_initial_content(
+            brief=brief,
+            strategy=strategy,
+            grounding=grounding,
+        )
+    except AIRateLimitError:
+        # A quota failure is not a validation failure. Try only a supported,
+        # model-free template, then run every validator as usual.
+        try:
+            content = _generate_safe_fallback_content(
+                brief=brief, strategy=strategy, grounding=grounding
+            )
+        except (SafeFallbackError, ValueError, TypeError) as error:
+            raise RuntimeError(
+                "Groq usage limit reached and no safe, supported fallback is available."
+            ) from None
+        content._provider_fallback_reason = "provider_rate_limit"
 
+
+    if content._provider_fallback_reason:
+        fallback_metadata = {
+            "attempted": True, "successful": True,
+            "reason": content._provider_fallback_reason,
+        }
+        generation_source = "deterministic fallback"
 
     # --------------------------------------------------
     # Initial Validation
@@ -1569,6 +1593,11 @@ def generate_marketing_content(
     # --------------------------------------------------
 
     except ContentValidationError as initial_error:
+
+        if content._provider_fallback_reason:
+            raise RuntimeError(
+                "BrandPilot blocked a non-compliant deterministic provider fallback."
+            ) from None
 
         if MAX_REPAIR_ATTEMPTS < 1:
 
